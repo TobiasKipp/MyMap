@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="OpenLayers.js"></script>
+<script src="jquery-2.1.1.min.js"></script>
+<script src="mymap.js"></script>
+
+<script type="text/javascript">
+var map = null;
+var layer_tasmaxwms = null;
+var wms = null;
+var wmsurl = "http://localhost:8080/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
+var allowedTimeValues = ["2001-08-01T12:00:00Z", "2002-08-01T12:00:00Z", "2003-08-01T12:00:00Z"]
+
+function init(){
+    var myMap = new MyMap();
+    //var map = myMap.map;
+    //var mapOptions = {};
+    //map = new OpenLayers.Map('map', mapOptions);
+    //map.addControl(new OpenLayers.Control.LayerSwitcher());
+    //wms = new OpenLayers.Layer.WMS(
+    //    "Worldmap OSGeo",
+    //    "http://vmap0.tiles.osgeo.org/wms/vmap0?",
+    //    {layers: 'basic'}
+    //);
+    //map.addLayer(wms);
+
+   // layer_tasmaxwms = new OpenLayers.Layer.WMS(
+   //     "tasmax",
+   //     wmsurl,
+   //     {layers: "tasmax", transparent:true});
+   // selectControl = new OpenLayers.Control.SelectFeature(
+   //     [layer_tasmaxwms],{
+   //         clickout: true, toggle: false,
+   //         multiple: false, hover: false,
+   //         toggleKey: "ctrlKey", // ctrl key removes from selection
+   //         multipleKey: "shiftKey" // shift key adds to selection
+   //         });
+   // layer_tasmaxwms.isBaseLayer = false;
+   // a = map.addLayer(layer_tasmaxwms);
+   // map.addControl(selectControl);
+   // if (a){
+   //     $("#tasmax").html("Loaded tasmax WMS");}
+
+   myMap.map.zoomToMaxExtent();
+  
+   // var layer = layer_tasmaxwms;
+   // //Get the allowed time values
+   // var processName = "WMS.GetTimesteps";
+   // var wpsUrl = "http://localhost:12345/wps";
+   // $.get(wpsUrl+'?dataInputs=layer_name='+layer.name+';wms_url='+wmsurl+
+   //          '&service=WPS&version=1.0.0&request=execute&rawdataoutput=timesteps&identifier='+
+   //          processName,
+   //      function(response, status){
+   //          allowedTimeValues = response.split(",")});
+   // //Set the start index for the time
+   // var index = 0
+   // function nextFrame(){
+   //     index+=1;
+   //     if (index >= allowedTimeValues.length){
+   //         index = 0;}
+   //     update_date(allowedTimeValues[index]);};
+   // $("#nextframe").click(nextFrame);
+};
+function update_date(timestring) {
+    $("#abc").html(timestring);
+    layer_tasmaxwms.mergeNewParams({'time':timestring});
+};
+</script>
+</head>
+<body onload="init()">
+<h1>Welcome to the Map test page</h1>
+<input type="button" id="nextframe" name="nextframe" value="Next frame">
+<input type="button" id="getlist" name="getlist" value="Print list to console">
+<div id="map" class="smallmap"></div> 
+<div id="abc"> Some extra text </div>
+<div id="tasmax">Tasmax not added</div>
+
+</body>
+</html>
