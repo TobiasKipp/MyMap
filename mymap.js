@@ -5,25 +5,47 @@ var mapOptions = {};
  */
 function MyMap(){
     var map = new OpenLayers.Map('map',mapOptions);
+    this.timesteps = {};
     this.map = map;
     //Add control elements
     this.map.addControl(new OpenLayers.Control.LayerSwitcher());
     //Add the BaseLayer map
-    this.addWMSLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?", {layers: 'basic'},
-                     {},isBaseLayer=true);
+    this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
+                         {layers: 'basic'}, {});
     };
 
-
 /*
- * Create a Layer for a WMS and automatically add it to the map.
- * BaseLayers can be switched with only one being active at a time. Non BaseLayers can 
- * be active in parallel.
+ * Add a BaseLayer to the map. Only one BaseLayer can be active at a time (selected with radiobox).
  */
-MyMap.prototype.addWMSLayer = function(name, url, params, options, isBaseLayer){
+MyMap.prototype.addWMSBaseLayer = function(name, url, params, options){
     wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
-    wmsLayer.isBaseLayer = isBaseLayer;
+    wmsLayer.isBaseLayer = true;
     this.map.addLayer(wmsLayer);
     };
 
 
+/*
+ * Add an Overlay that contains timesteps. 
+ * For now the timesteps will be extracted from the WMS file using an external process.
+ */
 
+MyMap.prototype.addWMSOverlay = function(name, url, params, options){
+    wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
+    wmsLayer.isBaseLayer = false;
+    this.timesteps[wmsLayer.name] = this.getTimesteps(wmsLayer, url);
+    this.map.addLayer(wmsLayer);
+    };
+
+
+MyMap.prototype.getTimesteps = function(layer, wmsurl){
+    var processName = "WMS.GetTimesteps";
+    var wpsUrl = "http://localhost:12345/wps";
+    var request = (wpsUrl + '?dataInputs=layer_name=' + layer.name + ';wms_url=' + wmsurl + 
+                   '&service=WPS&version=1.0.0&request=execute&rawdataoutput=timesteps&identifier=' + 
+                   processName);
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", request, false);
+    xhr.setRequestHeader("pragma", "no-cache");
+    xhr.send(null);
+    return xhr.responseText.split(",");
+    };
