@@ -5,17 +5,20 @@ function intersection(a,b){
     return $.map(a, function(x){return $.inArray(x, b) < 0 ? null : x;});
 }
 
-
-var mapOptions = {};
-
 /*
  * MyMap creates a OpenLayers map object and adds basic features and a BaseLayer to it.
+ *
  */
 function MyMap(){
+    var _this = this;
+    var mapOptions = {eventListeners:{"changelayer": function(event){_this.updateOverlays()}}};
     var map = new OpenLayers.Map('map',mapOptions);
-    this.timesteps = {};
-    this.layers = {};
     this.map = map;
+    //While map stores all Layers for the time update only the overlays are of interest. 
+    //To prevent recalculating which ones are overlays every time they are stored in the overlays
+    //variable.
+    this.overlays = {};
+    this.visibleOverlays = [];//used to store which overlays are visible.
     //Add control elements
     this.layerSwitcher = new OpenLayers.Control.LayerSwitcher();
     this.map.addControl(this.layerSwitcher);
@@ -24,53 +27,53 @@ function MyMap(){
     //Add the BaseLayer map
     this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
                          {layers: 'basic'}, {});
-    var _this = this;
     $("#nextframe").click(function(){_this.nextFrame();});
-    };
-
-MyMap.prototype.nextFrame = function(){
-    //TODO: Move find visible overlays and frameTimes update to an event or something, to save
-    //unnecessary processing at every step.
-    //find visible overlays
-    visibleOverlays = []
-    for (name in this.timesteps){
-        var states = this.layerSwitcher.layerStates;
-        for (key in states){
-            if(states[key].name===name){
-                if(states[key].visibility===true){
-                    visibleOverlays.push(name);}}}}
-    //create the list of time values available in all visible overlays.
-    this.frameTimes = [];
-    if (visibleOverlays.length > 0){
-        this.frameTimes = this.timesteps[visibleOverlays[0]];
-        for (i=1; i < visibleOverlays.length; i++){
-            this.frameTimes = intersection(this.frameTimes, this.timesteps[visibleOverlays[i]]) ;
-            }
-        }
-    this.frameIndex+=1;
-    if (this.frameIndex > this.frameTimes.length){ 
-        this.frameIndex = 0;
-        }
-    //Only update if there is a common time on all overlays.
-    if (this.frameTimes.length != 0){
-        var time = this.frameTimes[this.frameIndex];
-        $("#abc").html(time);
-        for (i=0; i < visibleOverlays.length; i++){
-            this.layers[visibleOverlays[i]].mergeNewParams({'time':time});
-            }
-        }
-
+    //layerSwitcher.addEventListener()
     };
 
 /*
+ * Updates the information about timesteps and visible overlays. Should be run on each
+ * change of selected Overlays. 
+ */
+MyMap.prototype.updateOverlays = function(){
+    this.visibleOverlays = [];
+    for (name in this.overlays){
+        var overlay = this.overlays[name];
+        if(overlay.visibility){
+            this.visibleOverlays.push(overlay);}}
+    this.frameTimes = [];
+    if (this.visibleOverlays.length > 0){
+        this.frameTimes = this.visibleOverlays[0].timesteps;
+        for (var i=1; i < this.visibleOverlays.length; i++){
+            this.frameTimes = intersection(this.frameTimes, this.visibleOverlays[i].timesteps);}}};
+
+/*
+ * Change the parameters such that the next frame with a new time will be generated,
+ * if a valid time value exists. 
+ */
+MyMap.prototype.nextFrame = function(){
+    this.frameIndex+=1;
+    if (this.frameIndex >= this.frameTimes.length){ 
+        this.frameIndex = 0;}
+    if (this.frameTimes.length != 0){
+        var time = this.frameTimes[this.frameIndex];
+        $("#abc").html(time);
+        for (var i=0; i < this.visibleOverlays.length; i++){
+            overlay = this.visibleOverlays[i];
+            overlay.mergeNewParams({'time':time});}}};
+
+/*
  * Add a BaseLayer to the map. Only one BaseLayer can be active at a time (selected with radiobox).
+ * @param {string} name Name of the BaseLayer in the GUI (e.g. EUR-44-tasmax)
+ * @param {string} url The WMS url
+ * @param {json} params The OpenLayers params (e.g. {layers:"basic"})
+ * @param {json} options The OpenLayers options.
  */
 MyMap.prototype.addWMSBaseLayer = function(name, url, params, options){
     wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
     wmsLayer.isBaseLayer = true;
-    this.map.addLayer(wmsLayer);
-    };
-
+    //wmsLayer.wrapDateLine= true;
+    this.map.addLayer(wmsLayer);};
 
 /*
  * Add an Overlay that contains timesteps. 
@@ -88,12 +91,16 @@ MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
     wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
     wmsLayer.isBaseLayer = false;
     //wmsLayer.opacity = 1;
-    this.timesteps[name] = this.getTimesteps(layerName, url);
-    this.layers[name] = wmsLayer;
+    wmsLayer.timesteps = this.getTimesteps(layerName, url);
+    this.overlays[name] = wmsLayer;
     this.map.addLayer(wmsLayer);
-    }
+    this.updateOverlays()};
 
-
+/*
+ * Make an WPS call with layer (variable) name and the WMS url.
+ * @param {string} layerName The name of the to view variable (e.g. tasmax)
+ * @param {string} wmsurl The url to the WMS service without a query.
+ */
 MyMap.prototype.getTimesteps = function(layerName, wmsurl){
     var processName = "WMS.GetTimesteps";
     var wpsUrl = "http://localhost:12345/wps";
@@ -104,5 +111,4 @@ MyMap.prototype.getTimesteps = function(layerName, wmsurl){
     xhr.open("GET", request, false);
     xhr.setRequestHeader("pragma", "no-cache");
     xhr.send(null);
-    return xhr.responseText.split(",");
-    };
+    return xhr.responseText.split(",");};
