@@ -28,7 +28,7 @@ function MyMap(){
     this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
                          {layers: 'basic'}, {});
     $("#nextframe").click(function(){_this.nextFrame();});
-    //layerSwitcher.addEventListener()
+    $("#timeslider").on("input change", function(){_this.frameFromSlider();});
     };
 
 /*
@@ -45,7 +45,10 @@ MyMap.prototype.updateOverlays = function(){
     if (this.visibleOverlays.length > 0){
         this.frameTimes = this.visibleOverlays[0].timesteps;
         for (var i=1; i < this.visibleOverlays.length; i++){
-            this.frameTimes = intersection(this.frameTimes, this.visibleOverlays[i].timesteps);}}};
+            this.frameTimes = intersection(this.frameTimes, this.visibleOverlays[i].timesteps);}}
+    //update the sliders maximum value
+    $("#timeslider").attr('max', this.frameTimes.length);
+    };
 
 /*
  * Change the parameters such that the next frame with a new time will be generated,
@@ -53,6 +56,14 @@ MyMap.prototype.updateOverlays = function(){
  */
 MyMap.prototype.nextFrame = function(){
     this.frameIndex+=1;
+    $("#timeslider").val(this.frameIndex);
+    this.showFrame();};
+
+MyMap.prototype.frameFromSlider = function(){
+    this.frameIndex = parseInt($("#timeslider").val());
+    this.showFrame();};
+
+MyMap.prototype.showFrame = function(){
     if (this.frameIndex >= this.frameTimes.length){ 
         this.frameIndex = 0;}
     if (this.frameTimes.length != 0){
@@ -61,6 +72,7 @@ MyMap.prototype.nextFrame = function(){
         for (var i=0; i < this.visibleOverlays.length; i++){
             overlay = this.visibleOverlays[i];
             overlay.mergeNewParams({'time':time});}}};
+
 
 /*
  * Add a BaseLayer to the map. Only one BaseLayer can be active at a time (selected with radiobox).
