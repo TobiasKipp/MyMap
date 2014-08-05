@@ -8,13 +8,15 @@
 
 <script type="text/javascript">
 var wmsurl = "http://localhost:8080/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
+var wmsurl2 = "http://localhost:8080/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAINT_evaluation_r1i1p1_KNMI-RACMO22T_v1_day_20010101-20051231.nc"
 //var allowedTimeValues = ["2001-08-01T12:00:00Z", "2002-08-01T12:00:00Z", "2003-08-01T12:00:00Z"]
 var myMap = null;
 
-function init(){
+function mymap_init(){
     myMap = new MyMap();
     //Add the test layer 
-    myMap.addWMSOverlay("tasmax", wmsurl, {layers: "tasmax", transparent:true},{});
+    myMap.addWMSOverlay("EUR-44-tasmax", wmsurl, "tasmax");
+    myMap.addWMSOverlay("AFR-44-tasmax", wmsurl2, "tasmax");
     myMap.map.zoomToMaxExtent();
   
    // //Set the start index for the time
@@ -32,7 +34,7 @@ function init(){
 //};
 </script>
 </head>
-<body onload="init()">
+<body onload="mymap_init()">
 <h1>Welcome to the Map test page</h1>
 <input type="button" id="nextframe" name="nextframe" value="Next frame">
 <input type="button" id="getlist" name="getlist" value="Print list to console">
