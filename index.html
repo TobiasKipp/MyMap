@@ -22,10 +22,9 @@ function mymap_init(){
 </script>
 </head>
 <body onload="mymap_init()">
-<h1>Welcome to the Map test page</h1>
-<input type="button" id="nextframe" name="nextframe" value="Next frame">
-<input type="button" id="getlist" name="getlist" value="Print list to console">
+<div id="map" class="smallmap"></div> 
 <input type="range" id="timeslider" min="0" max="0">
+<input type="button" id="nextframe" name="nextframe" value="Next frame">
 <div id="start">
     <input type="button" id="startframe" name="startframe" value="This frame">
     <span>Start:</span>
@@ -38,8 +37,8 @@ function mymap_init(){
 </div>
 <div id = animation>
     <input type="button" id="animate" name="animate" value="Animate">
+    <input type="text" id="frequency" value="1000">
 </div>
-<div id="map" class="smallmap"></div> 
 <div id="abc"> Some extra text </div>
 
 </body>

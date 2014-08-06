@@ -30,7 +30,17 @@ function MyMap(){
     $("#nextframe").click(function(){_this.nextFrame();});
     $("#startframe").click(function(){_this.startFrame();});
     $("#endframe").click(function(){_this.endFrame();});
+    var animationTimer;
+    $("#animate").click(function(){
+        if (animationTimer === undefined){
+            animationTimer=setInterval(function(){_this.nextFrame();},parseInt($("#frequency").val()));
+            $("#animate").val("stop");}
+        else{
+            clearInterval(animationTimer);
+            $("#animate").val("animate");
+            animationTimer=undefined;}});
     $("#timeslider").on("input change", function(){_this.frameFromSlider();});
+    //TODO: Tooltip for slider$("#timeslider").on("mousemove", function(event){ console.log(event);});
     };
 
 /*
@@ -74,6 +84,7 @@ MyMap.prototype.showFrame = function(){
         for (var i=0; i < this.visibleOverlays.length; i++){
             overlay = this.visibleOverlays[i];
             overlay.mergeNewParams({'time':time});}}};
+    
 
 MyMap.prototype.startFrame = function(){
     $("#startframevalue").html(this.frameTimes[this.frameIndex]);
