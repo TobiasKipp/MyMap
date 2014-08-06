@@ -7,11 +7,10 @@
 <script src="mymap.js"></script>
 
 <script type="text/javascript">
-var wmsurl = "http://localhost:8080/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
-var wmsurl2 = "http://localhost:8080/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAINT_evaluation_r1i1p1_KNMI-RACMO22T_v1_day_20010101-20051231.nc"
+var wmsurl = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
+var wmsurl2 = "http://localhost:12345/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAINT_evaluation_r1i1p1_KNMI-RACMO22T_v1_day_20010101-20051231.nc"
 //var allowedTimeValues = ["2001-08-01T12:00:00Z", "2002-08-01T12:00:00Z", "2003-08-01T12:00:00Z"]
 var myMap = null;
-
 function mymap_init(){
     myMap = new MyMap();
     //Add the test layer 
@@ -19,19 +18,7 @@ function mymap_init(){
     myMap.addWMSOverlay("AFR-44-tasmax", wmsurl2, "tasmax");
     myMap.map.zoomToMaxExtent();
   
-   // //Set the start index for the time
-   // var index = 0
-   // function nextFrame(){
-   //     index+=1;
-   //     if (index >= allowedTimeValues.length){
-   //         index = 0;}
-   //     update_date(allowedTimeValues[index]);};
-   // $("#nextframe").click(nextFrame);
 };
-//function update_date(timestring) {
-//    $("#abc").html(timestring);
-//    layer_tasmaxwms.mergeNewParams({'time':timestring});
-//};
 </script>
 </head>
 <body onload="mymap_init()">
@@ -39,6 +26,19 @@ function mymap_init(){
 <input type="button" id="nextframe" name="nextframe" value="Next frame">
 <input type="button" id="getlist" name="getlist" value="Print list to console">
 <input type="range" id="timeslider" min="0" max="0">
+<div id="start">
+    <input type="button" id="startframe" name="startframe" value="This frame">
+    <span>Start:</span>
+    <span id="startframevalue"></span>
+</div">
+<div id="end">
+    <input type="button" id="endframe" name="endframe" value="This frame">
+    <span>End:</span>
+    <span id="endframevalue"></span>
+</div>
+<div id = animation>
+    <input type="button" id="animate" name="animate" value="Animate">
+</div>
 <div id="map" class="smallmap"></div> 
 <div id="abc"> Some extra text </div>
 

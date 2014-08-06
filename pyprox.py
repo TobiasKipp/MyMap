@@ -8,6 +8,8 @@ class MyHandler(BaseHTTPRequestHandler):
         text = "Hello World!"
         if path[:4] == "/wps":
             text = urllib.urlopen("http://localhost:8095/wps"+path[4:]).read()
+        elif path[:8] == "/thredds":
+            text = urllib.urlopen("http://localhost:8080"+path).read()
         else:
             text = open(path[1:],"rb").read()
         self.send_response(200)
