@@ -111,7 +111,7 @@ MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
     params = {layers: layerName, transparent:true};
     wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
     wmsLayer.isBaseLayer = false;
-    this.getTimesteps(wmsLayer);
+    this.addTimesteps(wmsLayer);
     this.overlays[name] = wmsLayer;
     this.map.addLayer(wmsLayer);
     };
@@ -121,7 +121,7 @@ MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
  * Get capabilities, add the timesteps property to the overlay and then update the overlays.
  * @param {OpenLayers.Layer} overlay The Layer object which will have the timesteps property added.
  */
-MyMap.prototype.getTimesteps = function(overlay){
+MyMap.prototype.addTimesteps = function(overlay){
     //Extract needed variables from the Layer overlay.
     var wmsurl = overlay.url;
     var layerName = overlay.params.LAYERS;
