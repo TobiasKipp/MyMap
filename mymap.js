@@ -111,37 +111,22 @@ MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
     params = {layers: layerName, transparent:true};
     wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
     wmsLayer.isBaseLayer = false;
-    this.getTimesteps(layerName, url, wmsLayer);
+    this.getTimesteps(wmsLayer);
     this.overlays[name] = wmsLayer;
     this.map.addLayer(wmsLayer);
     };
 
-///*
-// * Make an WPS call with layer (variable) name and the WMS url.
-// * @param {string} layerName The name of the to view variable (e.g. tasmax)
-// * @param {string} wmsurl The url to the WMS service without a query.
-// */
-//MyMap.prototype.getTimesteps_wms = function(layerName, wmsurl){
-//    var processName = "WMS.GetTimesteps";
-//    var wpsUrl = "http://localhost:12345/wps";
-//    var request = (wpsUrl + '?dataInputs=layer_name=' + layerName + ';wms_url=' + wmsurl + 
-//                   '&service=WPS&version=1.0.0&request=execute&rawdataoutput=timesteps&identifier=' + 
-//                   processName);
-//    var xhr = new XMLHttpRequest();
-//    xhr.open("GET", request, false);
-//    xhr.setRequestHeader("pragma", "no-cache");
-//    xhr.send(null);
-//    return xhr.responseText.split(",");};
 
 /*
  * Get capabilities, add the timesteps property to the overlay and then update the overlays.
- * @param {string} layerName The name of the layer of the to view variable (e.g. tasmax)
- * @param {string} wmsurl The url to the WMS, allowing to exectue GetCapabilities on.
  * @param {OpenLayers.Layer} overlay The Layer object which will have the timesteps property added.
- * @param {string} version The WMS version. (e.g. 1.1.1)
  */
-MyMap.prototype.getTimesteps = function(layerName, wmsurl, overlay, version){
-    version = version || '1.1.1';
+MyMap.prototype.getTimesteps = function(overlay){
+    //Extract needed variables from the Layer overlay.
+    var wmsurl = overlay.url;
+    var layerName = overlay.params.LAYERS;
+    var version = overlay.params.VERSION;
+    //Prepare for the request
     var wmsFormat = new OpenLayers.Format.WMSCapabilities({version: version});
     var _this = this;
     OpenLayers.Request.GET({
