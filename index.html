@@ -17,11 +17,12 @@ function mymap_init(){
     myMap.addWMSOverlay("EUR-44-tasmax", wmsurl, "tasmax");
     myMap.addWMSOverlay("AFR-44-tasmax", wmsurl2, "tasmax");
     myMap.map.zoomToMaxExtent();
-  
+
 };
 </script>
 </head>
 <body onload="mymap_init()">
+<div id="datepicker"></div>
 <div id="map" class="smallmap"></div> 
 <input type="range" id="timeslider" min="0" max="0">
 <input type="button" id="nextframe" name="nextframe" value="Next frame">
@@ -38,6 +39,13 @@ function mymap_init(){
 <div id = animation>
     <input type="button" id="animate" name="animate" value="Animate">
     <input type="text" id="frequency" value="1000">
+    <select id=aggregation>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+    </select>
+    <input type="button" id="animateGif" name="animateGif" value="Animate Gif">
 </div>
 <div id="abc"> Some extra text </div>
 
