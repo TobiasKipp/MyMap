@@ -26,6 +26,11 @@ Date.prototype.getWeek = function() {
                         - 3 + (week1.getDay() + 6) % 7) / 7);
 }
 
+function AnimationValues(startIndex, timeValues){
+    this.index=startIndex;
+    this.frames=timeValues;
+    }
+
 /*
  * MyMap creates a OpenLayers map object and adds basic features and a BaseLayer to it.
  *
@@ -45,6 +50,7 @@ function MyMap(){
     this.map.addControl(this.layerSwitcher);
     this.frameIndex=0;
     this.frameTimes = [];
+    this.animationValues;
     //Add the BaseLayer map
     this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
                          {layers: 'basic'}, {});
@@ -55,6 +61,7 @@ function MyMap(){
     $("#animateGif").click(function(){_this.startGifAnimation();});
     $("#animate").click(function(){
         if (animationTimer === undefined){
+            _this.startAnimation();
             animationTimer=setInterval(function(){_this.runAnimation();},
                                        parseInt($("#frequency").val()));
             $("#animate").val("stop");}
@@ -66,24 +73,44 @@ function MyMap(){
     //TODO: Tooltip for slider$("#timeslider").on("mousemove", function(event){ console.log(event);});
     };
 
+MyMap.prototype.startAnimation = function(){
+    start = $("#startframevalue").html();
+    end = $("#endframevalue").html();
+    aggregation = $("#aggregation").val();
+    var times = this.filterTimesteps(this.frameTimes, aggregation, start, end);
+    this.animationValues = new AnimationValues(0,times);
+    }
+
+MyMap.prototype.runAnimation = function(){
+    var i = this.animationValues.index;
+    var time = this.animationValues.frames[i];
+    //update the silder. This will cause the event "input change" for #timeslider
+    j = this.frameTimes.indexOf(time);
+    $("#timeslider").val(j);
+    //show the new frame
+    this.showTimeFrame(time);
+    //circle through the animation frames
+    i++;
+    if (i >= this.animationValues.frames.length) i = 0;
+    this.animationValues.index = i;
+    }
+
 MyMap.prototype.startGifAnimation = function(){
     start = $("#startframevalue").html();
     end = $("#endframevalue").html();
     aggregation = $("#aggregation").val();
     var times = this.filterTimesteps(this.frameTimes, aggregation, start, end);
+    var limitFrames = $("#maxframes").val();
+    times = times.slice(0,limitFrames);
     var time = times.join(",");
     for (var i = 0; i < this.visibleOverlays.length; i++){
         var overlay = this.visibleOverlays[i];
-        var animatedurl = overlay.url+"?"
-        animatedurl += "TIME="+time;
-        animatedurl += "&TRANSPARENT=true";
-        animatedurl += "&FORMAT=image/gif";
-        //animatedurl += "&FORMAT=application/openlayers";
-        console.log(animatedurl);
-        wmsLayer = new OpenLayers.Layer.WMS("animate"+overlay.name, animatedurl, {layers:"tasmax"},{singleTile: true, ratio: 1, buffer: 1});
-        wmsLayer.isBaseLayer = false;
-        this.map.addLayer(wmsLayer);
-        }
+        //var animatedurl = overlay.url+"?"
+        //animatedurl += "TIME="+time;
+        //animatedurl += "&TRANSPARENT=true";
+        //animatedurl += "&FORMAT=image/gif";
+        overlay.mergeNewParams({'time':time, format:"image/gif"});
+    }
 };
 
 
@@ -114,21 +141,30 @@ MyMap.prototype.nextFrame = function(){
     this.frameIndex+=1;
     $("#timeslider").val(this.frameIndex);
     $("#timeslider").attr("max",this.frameTimes.length);
-    this.showFrame();};
+    this.showFrame();
+    };
 
 MyMap.prototype.frameFromSlider = function(){
     this.frameIndex = parseInt($("#timeslider").val());
-    this.showFrame();};
+    this.showFrame();
+    };
 
 MyMap.prototype.showFrame = function(){
     if (this.frameIndex >= this.frameTimes.length){ 
         this.frameIndex = 0;}
     if (this.frameTimes.length != 0){
         var time = this.frameTimes[this.frameIndex];
+        this.showTimeFrame(time);
+        }
+    }
+
+MyMap.prototype.showTimeFrame = function(time){
         $("#abc").html(time);
         for (var i=0; i < this.visibleOverlays.length; i++){
             overlay = this.visibleOverlays[i];
-            overlay.mergeNewParams({'time':time});}}};
+            overlay.mergeNewParams({'time':time});
+            }
+        };
     
 
 MyMap.prototype.startFrame = function(){
@@ -163,7 +199,7 @@ MyMap.prototype.addWMSBaseLayer = function(name, url, params, options){
 
 MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
     if (options === undefined){
-        options = {};};
+        options = {singleTile:true};};
     params = {layers: layerName, transparent:true};
     wmsLayer = new OpenLayers.Layer.WMS(name, url, params, options);
     wmsLayer.isBaseLayer = false;
@@ -349,34 +385,3 @@ MyMap.prototype.bist = function(){
     console.log("FAILED: " + testsFail);
 };
 
-//    if (timesteps == None or len(timesteps) == 0):
-//        return []
-//    timesteps.sort()
-//    work_timesteps = within_date_range(timesteps, start, end)
-//    
-//    new_timesteps = [work_timesteps[0]]
-//
-//    for index in range(1,len(work_timesteps)):
-//        current = date_parser.parse(new_timesteps[-1])
-//        candidate = date_parser.parse(work_timesteps[index])
-//    
-//        if current.year < candidate.year:
-//            new_timesteps.append(work_timesteps[index])
-//        elif current.year == candidate.year:
-//            if aggregation == "daily":
-//                if current.timetuple()[7] == candidate.timetuple()[7]:
-//                    continue
-//            elif aggregation == "weekly":
-//                if current.isocalendar()[1] == candidate.isocalendar()[1]:
-//                    continue
-//            elif aggregation == "monthly":
-//                if current.month == candidate.month:
-//                    continue
-//            elif aggregation == "yearly":
-//                if current.year == candidate.year:
-//                    continue
-//            # all checks passed
-//            new_timesteps.append(work_timesteps[index])
-//        else:
-//            continue
-//    return new_timesteps

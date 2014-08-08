@@ -7,6 +7,9 @@
     z-index: 0; /* Ensure pop-ups appear above the map! */ 
 }
 
+input[type=text]{
+    width:40px;
+}
 input[type=range]{
     width:820px;
 }
