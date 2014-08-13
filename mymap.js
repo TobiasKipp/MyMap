@@ -1,3 +1,13 @@
+//method from http://stackoverflow.com/questions/133310/how-can-i-get-jquery-to-perform-a-synchronous-rather-than-asynchronous-ajax-re
+function getURL(url){
+    return $.ajax({
+        type: "GET",
+        url: url,
+        cache: false,
+        async: false
+    }).responseText;
+}
+
 /*
  * Intersection method based on https://gist.github.com/jamiehs/3364281
  */
@@ -5,6 +15,23 @@ function intersection(a,b){
     return $.map(a, function(x){return $.inArray(x, b) < 0 ? null : x;});
 }
 
+/*
+ * TimeCache allows to store any Object at a given time (represented by a string).
+ * By calling get(time, Constructor, arg1, arg2, ...), the Constructors parameters args1, args2, ...
+ * can be set. (e.g. tc.get("2014-08-12", OneValue, "the value"))
+ * 
+ */
+    function TimeCache(){
+        this.cache = {}
+    }
+    TimeCache.prototype.get = function(time, name, url, params, option){
+        if (!(time in this.cache)){
+            this.cache[time]= new OpenLayers.Layer.WMS(name, url, params, option);
+            this.cache[time].isBaseLayer = false;
+            }
+        return this.cache[time];
+    }
+    TimeCache.prototype.getCacheCount = function(){ return Object.keys(this.cache).length;}
 /*
  * Add a getWeek method to Date using the ISO defintion of week.
  *
@@ -40,6 +67,7 @@ function MyMap(){
     var mapOptions = {eventListeners:{"changelayer": function(event){_this.updateOverlays()}}};
     var map = new OpenLayers.Map('map',mapOptions);
     this.map = map;
+    this.timeCaches = {};//For a dictionary of TimeCache objects.
     //While map stores all Layers for the time update only the overlays are of interest. 
     //To prevent recalculating which ones are overlays every time they are stored in the overlays
     //variable.
@@ -71,8 +99,141 @@ function MyMap(){
             animationTimer=undefined;}});
     $("#timeslider").on("input change", function(){_this.frameFromSlider();});
     //TODO: Tooltip for slider$("#timeslider").on("mousemove", function(event){ console.log(event);});
+    $("#testbutton").click(function(){
+        //About a year takes some minutes to render 
+        //_this.showTimeFrame("2001-01-17T12:00:00.000Z/2001-11-29T12:00:00.000Z");
+        //A few days
+        _this.showTimeFrame("2001-01-17T12:00:00.000Z/2001-01-29T12:00:00.000Z");
+        //NOTWORKING:_this.showTimeFrame("2001-01-17T12:00:00.000Z/P8D");
+
+        //NOTWORKING:_this.showTimeFrame("2001-01-17T12:00:00.000ZP8D");
+        //_this.LayerFakeAnimation()
+        });
+    /*
+     * Add the layer described 
+     */
+    $("#addwms").click(function(){
+        //check if all important parameters are set
+        var url = $("#wmsurl").val().split("?")[0];
+        if (url === "")return;
+        var layer = $("#layer").val();
+        if (layer === null) return;
+        //if the layer name is empty generate one
+        if ($("#layername").val() == ""){
+            var slnp = url.split("/").slice(-1)[0].split("_").slice(0,2)
+            var suggestLayerName = slnp[0] + "_" + slnp[1];
+            $("#layername").val(suggestLayerName);
+            }
+        var layername = $("#layername").val();
+
+        _this.addWMSOverlay(layername, url, layer);
+        });
+    $("#wmsurl").on("blur", function(){
+        var url = $("#wmsurl").val();
+        var names = _this.getLayers(url)
+        var text = "";
+        for (var i = 0; i < names.length; i++){
+            var name = names[i];
+            if (["lon","lat"].indexOf(name) == -1){
+                text+= '<option value="'+name+'">'+name+'</option>';
+                }
+            }
+        $("#layer").html(text);
+        });
     };
 
+MyMap.prototype.getLayers = function(url){
+    var urlhead = url.split("?")[0];
+    var request = "?request=GetCapabilities&service=WMS&version=1.1.0"
+    var text = getURL(urlhead+request);
+    var xmlDoc = $.parseXML(text);
+    var names =[];
+    $xml = $(xmlDoc)
+    $names = $xml.find("Layer").children("Name").each(function(){
+        names.push($(this).text())
+        });
+    return names;
+    };
+
+MyMap.prototype.LayerFakeAnimation = function(){
+    var steps = [ "2001-01-01T12:00:00.000Z",
+                  "2001-01-02T12:00:00.000Z",
+                  "2001-01-03T12:00:00.000Z",
+                  "2001-01-04T12:00:00.000Z",
+                  "2001-01-05T12:00:00.000Z",
+                  "2001-01-06T12:00:00.000Z",
+                  "2001-01-07T12:00:00.000Z",
+                  "2001-01-08T12:00:00.000Z",
+                  "2001-01-09T12:00:00.000Z",
+                  "2001-01-10T12:00:00.000Z",
+                  "2001-01-11T12:00:00.000Z",
+                  "2001-01-12T12:00:00.000Z",
+                  "2001-01-13T12:00:00.000Z",
+                  "2001-01-14T12:00:00.000Z",
+                  "2001-01-15T12:00:00.000Z",
+                  "2001-01-16T12:00:00.000Z",
+                  "2001-01-17T12:00:00.000Z",
+                  "2001-01-18T12:00:00.000Z",
+                  "2001-01-19T12:00:00.000Z",
+                  "2001-01-20T12:00:00.000Z",
+                  "2001-01-21T12:00:00.000Z",
+                  "2001-01-22T12:00:00.000Z",
+                  "2001-01-23T12:00:00.000Z",
+                  "2001-01-24T12:00:00.000Z",
+                  "2001-01-25T12:00:00.000Z",
+                  "2001-01-26T12:00:00.000Z",
+                  "2001-01-27T12:00:00.000Z",
+                  "2001-01-28T12:00:00.000Z",
+                  "2001-01-29T12:00:00.000Z",
+                  "2001-01-30T12:00:00.000Z",
+                  "2001-01-31T12:00:00.000Z",
+                  ]
+    var name = "EUR-44-tasmax"
+    var url = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
+    var layername = "tasmax";
+    var timeLayers = {};//map layername to a list of layers
+    for (var i = 0; i < steps.length; i++){timeLayers[steps[i]] = []}
+    //Create the Layers
+    for (var i = 0; i < steps.length; i++){
+        var time = steps[i];
+        var layer = new OpenLayers.Layer.WMS(name, url, {LAYERS:layername, transparent: true,
+                                             time:time}, {singleTile:true, isBaseLayer:false});
+        this.map.addLayer(layer);
+        layer.setVisibility(true);
+        timeLayers[time].push(layer); 
+        }
+    //Turn all layers invisible
+    for (var i = 0; i < steps.length; i++){
+        var layers = timeLayers[steps[i]];
+        for (var j=0; j < layers.length; j++){
+            layers[j].setVisibility(false);
+            }
+        }
+    //Initialize animation
+    var currentIndex = 0;
+    startLayers = timeLayers[steps[0]];
+    for (var i = 0; i < startLayers.length; i++){
+        startLayers[i].setVisibility(true);
+        }
+    //Define the method to run on timeout
+    function nextFrame(){
+        var oldLayers = timeLayers[steps[currentIndex]]
+        currentIndex++;
+        if(currentIndex >= steps.length){currentIndex = 0;}
+        var newLayers = timeLayers[steps[currentIndex]];
+        for (var i=0; i < newLayers.length; i++){
+            newLayers[i].setVisibility(true);
+            }
+        for (var i=0; i < oldLayers.length; i++){
+            oldLayers[i].setVisibility(false);
+            }
+        this.fakeAnimation = setTimeout(nextFrame, parseInt($("#frequency").val()))
+        }
+    
+    this.fakeAnimation = setTimeout(nextFrame, 1000);
+    
+    
+};
 MyMap.prototype.startAnimation = function(){
     start = $("#startframevalue").html();
     end = $("#endframevalue").html();
@@ -158,14 +319,34 @@ MyMap.prototype.showFrame = function(){
         }
     }
 
+
 MyMap.prototype.showTimeFrame = function(time){
         $("#abc").html(time);
         for (var i=0; i < this.visibleOverlays.length; i++){
             overlay = this.visibleOverlays[i];
-            overlay.mergeNewParams({'time':time});
+            overlay.mergeNewParams({'time':time,  format:"image/gif"});
             }
         };
     
+//MyMap.prototype.showTimeFrame = function(time){
+//        $("#abc").html(time);
+//        for (var i=0; i < this.map.layers.length; i++){
+//            overlay = this.map.layers[i];
+//            if (overlay.isBaseLayer) continue;//Must be an overlay layer
+//            if (!overlay.visibility) continue;//Must be visible
+//            name = overlay.name;
+//            url = overlay.url;
+//            params = {layers: overlay.params.LAYERS, transparent: true, time:time};
+//            options = {singleTile:true, isBaseLayer: false}
+//            this.map.layers[i] = this.timeCaches[name].get(time, name, url, params, options);
+//            //newOverlay = this.timeCaches[name].get(time, name, url, params, options);
+//            //newOverlay.setVisibility(true);
+//            //console.log(name,", ", url, ",",  params, ",",  options);
+//            //console.log("overlay is old="+ (overlay == this.map.layers[i]))
+//            //this.map.layers[i].setVisibility(true);
+//            
+//            }
+//        };
 
 MyMap.prototype.startFrame = function(){
     $("#startframevalue").html(this.frameTimes[this.frameIndex]);
@@ -206,6 +387,7 @@ MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
     this.addTimesteps(wmsLayer);
     this.overlays[name] = wmsLayer;
     this.map.addLayer(wmsLayer);
+    this.timeCaches[name] = new TimeCache();
     };
 
 
@@ -379,6 +561,31 @@ MyMap.prototype.bist = function(){
     var filteredTimestepsY = this.filterTimesteps(timestepsY, "yearly", "2001-01-01", "2011-08-05")
     var assumedFTY = [timestepsY[0], timestepsY[2], timestepsY[4], timestepsY[5]];
     testFilterTimesteps(filteredTimestepsY, assumedFTY);
+
+    //Test TimeCache with basic Objects.
+    function testEqual(a, b){
+             if(a === b) testsOkay++;
+             else{
+                 testsFail++;
+                 console.log(a + " is not equal to " + b);
+                 }
+             };
+    function MyObject(value){this.value=value;}
+    var ca = new TimeCache();
+    var x = ca.getCacheCount();
+    testEqual(x,0);
+    var one = ca.get("2014-04-04", MyObject, "1" );
+    testEqual(one.value,"1");
+    x = ca.getCacheCount();
+    testEqual(x,1);
+    var nOne = ca.get("2014-04-05", MyObject, 1 );
+    testEqual(nOne.value,1);
+    x = ca.getCacheCount();
+    testEqual(x,2);
+    testEqual(ca.get("2014-04-05").value,1);
+
+
+
     //Summary of all tests
     console.log("=================================================");
     console.log("PASSED: " + testsOkay);

@@ -2,9 +2,9 @@
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="style.css">
-<script src="OpenLayers.js"></script>
-<script src="jquery-2.1.1.min.js"></script>
-<script src="mymap.js"></script>
+<script type="text/javascript" src="OpenLayers.js"></script>
+<script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+<script type="text/javascript" src="mymap.js"></script>
 
 <script type="text/javascript">
 var wmsurl = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
@@ -13,10 +13,9 @@ var wmsurl2 = "http://localhost:12345/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAIN
 var myMap = null;
 function mymap_init(){
     myMap = new MyMap();
-    //Add the test layer 
-    myMap.addWMSOverlay("EUR-44-tasmax", wmsurl, "tasmax");
-    myMap.addWMSOverlay("AFR-44-tasmax", wmsurl2, "tasmax");
+    //Zoom to fit the world
     myMap.map.zoomToMaxExtent();
+    myMap.map.zoomIn();
 
 };
 </script>
@@ -24,8 +23,17 @@ function mymap_init(){
 <body onload="mymap_init()">
 <div id="datepicker"></div>
 <div id="map" class="smallmap"></div> 
+<div id="addWMS">
+    <input type="text" id="wmsurl" name="wmsurl" value="http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc">
+    <select id="layer">
+    </select>
+    <input type="text" id="layername" name="layername">
+    <input type="button" id="addwms" value="Add WMS">
+</div>
 <input type="range" id="timeslider" min="0" max="0">
 <input type="button" id="nextframe" name="nextframe" value="Next frame">
+<input type="button" id="testbutton" name="test" value="Test">
+<div id="timeline"></div>
 <div id="start">
     <input type="button" id="startframe" name="startframe" value="This frame">
     <span>Start:</span>

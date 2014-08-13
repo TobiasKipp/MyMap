@@ -10,6 +10,13 @@
 input[type=text]{
     width:40px;
 }
+
+input[type=text]#wmsurl{
+    width:400px;
+}
+input[type=text]#layername{
+    width:100px;
+}
 input[type=range]{
     width:820px;
 }

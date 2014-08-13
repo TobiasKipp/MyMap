@@ -14,6 +14,8 @@ class MyHandler(BaseHTTPRequestHandler):
             if path in ["","/"]:
                 path = "/index.html"
             text = open(path[1:],"rb").read()
+        #if path[-4:] == ".kml":
+        #    self.send_header("Content-type", "application/vnd.google-earth.kml+xml")
         self.send_response(200)
         self.end_headers()
         self.wfile.write(text)
