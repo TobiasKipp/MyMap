@@ -109,8 +109,17 @@ function MyMap(){
         //NOTWORKING:_this.showTimeFrame("2001-01-17T12:00:00.000ZP8D");
         //_this.LayerFakeAnimation()
         });
+    function updateAvailableWMSLayers(){
+        var removeableLayers = _this.getWMSNBLNames();
+        var text=""
+        $(removeableLayers).each(function(){
+            var name = this.name;
+            text+= '<option value="'+name+'">'+name+'</option>';
+            })
+        $("#removeLayerName").html(text);
+        };
     /*
-     * Add the layer described 
+     * Add the a WMS layer
      */
     $("#addwms").click(function(){
         //check if all important parameters are set
@@ -125,8 +134,13 @@ function MyMap(){
             $("#layername").val(suggestLayerName);
             }
         var layername = $("#layername").val();
+        if (_this.isWMSNBLNameUsed(layername)){
+            alert("The name " + layername + " is aready in use.");
+            return;
+            }
 
         _this.addWMSOverlay(layername, url, layer);
+        updateAvailableWMSLayers();
         });
     $("#wmsurl").on("blur", function(){
         var url = $("#wmsurl").val();
@@ -140,6 +154,21 @@ function MyMap(){
             }
         $("#layer").html(text);
         });
+
+    /*
+     * remove all WMS layers with the same name (In normal web use it should be only one).
+     */
+    $("#removewms").click(function(){
+        var name = $("#removeLayerName").val();
+        $layers = $(_this.map.layers);
+        $layers.each(function(){
+            if (this.name == name){
+                _this.map.removeLayer(this);
+                } 
+            });
+        updateAvailableWMSLayers();
+        });
+
     };
 
 MyMap.prototype.getLayers = function(url){
@@ -154,6 +183,31 @@ MyMap.prototype.getLayers = function(url){
         });
     return names;
     };
+
+/*
+ * Returs the names of the selectable non-base-WMS layers.
+ * Used for name colission, removal selection of WMS layers.
+ * (NBL=NonBaseLayer)
+ */
+MyMap.prototype.getWMSNBLNames = function(){
+    $layers = $(this.map.layers);
+    var removeableLayers =[]
+    $layers.each(function(){
+        if ((this.isBaseLayer === false) && (this.CLASS_NAME==="OpenLayers.Layer.WMS")){
+            removeableLayers.push(this);
+            }
+        });
+    return removeableLayers;
+    }
+
+MyMap.prototype.isWMSNBLNameUsed = function(layername){
+    $layers = $(this.getWMSNBLNames());
+    layernames = []
+    $layers.each(function(){
+        layernames.push(this.name);
+        });
+    return (layernames.indexOf(layername) >= 0);
+    }
 
 MyMap.prototype.LayerFakeAnimation = function(){
     var steps = [ "2001-01-01T12:00:00.000Z",
