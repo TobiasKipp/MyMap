@@ -129,9 +129,7 @@ function MyMap(){
         if (layer === null) return;
         //if the layer name is empty generate one
         if ($("#layername").val() == ""){
-            var slnp = url.split("/").slice(-1)[0].split("_").slice(0,2)
-            var suggestLayerName = slnp[0] + "_" + slnp[1];
-            $("#layername").val(suggestLayerName);
+            $("#layername").val(_this.suggestName(url));
             }
         var layername = $("#layername").val();
         if (_this.isWMSNBLNameUsed(layername)){
@@ -170,20 +168,37 @@ function MyMap(){
         });
 
     };
-
-MyMap.prototype.getLayers = function(url){
+MyMap.prototype.getCapabilties = function(url){
     var urlhead = url.split("?")[0];
     var request = "?request=GetCapabilities&service=WMS&version=1.1.0"
-    var text = getURL(urlhead+request);
+    return getURL(urlhead+request);
+    };
+MyMap.prototype.getLayers = function(url){
+    var text = this.getCapabilties(url);
     var xmlDoc = $.parseXML(text);
     var names =[];
     $xml = $(xmlDoc)
-    $names = $xml.find("Layer").children("Name").each(function(){
+    $xml.find("Layer").children("Name").each(function(){
         names.push($(this).text())
         });
     return names;
     };
 
+MyMap.prototype.suggestName = function(url){
+    var text = this.getCapabilties(url);
+    var xmlDoc = $.parseXML(text);
+    $xml = $(xmlDoc)
+    //Use the explicit path. The first tag might differ slightly, so it is left blank.
+    $t = $xml.children().children("Capability").children("Layer").children("Layer").children("Title")
+    var title = $t.text();
+    var snp = title.split("_")
+    var suggestedName;
+    //If it follows CORDEX like notation use the first two facets.
+    if (snp.length > 1) suggestedName= snp[0] + "_" + snp[1];
+    //else use up to 50 characters of the title.
+    else suggestedName = title.slice(0,50);
+    return suggestedName;
+    };
 /*
  * Returs the names of the selectable non-base-WMS layers.
  * Used for name colission, removal selection of WMS layers.
