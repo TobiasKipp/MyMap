@@ -8,6 +8,7 @@ function getURL(url){
     }).responseText;
 }
 
+
 /*
  * Intersection method based on https://gist.github.com/jamiehs/3364281
  */
@@ -86,7 +87,6 @@ function MyMap(){
     $("#startframe").click(function(){_this.startFrame();});
     $("#endframe").click(function(){_this.endFrame();});
     var animationTimer;
-    $("#animateGif").click(function(){_this.startGifAnimation();});
     $("#animate").click(function(){
         if (animationTimer === undefined){
             _this.startAnimation();
@@ -556,9 +556,35 @@ MyMap.prototype.filterTimesteps = function(timesteps, aggregation, start, end, s
 
 };
 
+MyMap.prototype.addImage = function(name, imageref){
+    imageLayer = new OpenLayers.Layer.Image(
+        name,
+        imageref,
+        new OpenLayers.Bounds(-180, -90, 180, 90),
+        new OpenLayers.Size(50,50),//chosen such that at any zoom the overlay is visible.
+        {numZoomLevels: 12, isBaseLayer: false}
+    );
+    
+    this.map.addLayer(imageLayer);
+}
 
 /*
- * Derived from hardware build in self test, the method will run some tests.
+ * Returns the visible WMS layers urls as list.
+ */
+MyMap.prototype.getVisibleWMSLayersUrls = function(){
+    $layers = $(this.map.layers);
+    var visibleLayers =[]
+    $layers.each(function(){
+        if ((this.isBaseLayer === false) && (this.CLASS_NAME==="OpenLayers.Layer.WMS")){
+            visibleLayers.push(this.url);
+            }
+        });
+    return visibleLayers;
+    
+}
+
+/*
+ * Build in self test will run some tests.
  * They can later be transferred to a real unittest/itegrationtest.
  */
 MyMap.prototype.bist = function(){

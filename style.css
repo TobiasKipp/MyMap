@@ -15,7 +15,13 @@ input[type=text]#wmsurl{
     width:400px;
 }
 input[type=text]#layername{
-    width:100px;
+    width:200px;
+}
+input[type=text]#imageLayerName{
+    width:200px;
+}
+input[type=text]#wmsLayerName{
+    width:200px;
 }
 input[type=range]{
     width:820px;

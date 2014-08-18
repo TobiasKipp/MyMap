@@ -4,6 +4,7 @@
 <link rel="stylesheet" type="text/css" href="style.css">
 <script type="text/javascript" src="OpenLayers.js"></script>
 <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+<script type="text/javascript" src="minwpsclient.js"></script>
 <script type="text/javascript" src="mymap.js"></script>
 
 <script type="text/javascript">
@@ -13,7 +14,7 @@ var wmsurl2 = "http://localhost:12345/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAIN
 var myMap = null;
 function mymap_init(){
     myMap = new MyMap();
-    //Zoom to fit the world
+    wpsClient = new WpsClient("http://localhost:12345/wps", "8090", "12345", myMap);
     myMap.map.zoomToMaxExtent();
     myMap.map.zoomIn();
 
@@ -66,6 +67,8 @@ function mymap_init(){
     <div id="gifrender">
         <input type="button" id="animateGif" name="animateGif" value="Animate Gif">
         Maximum gif frames: <input type="text" id="maxframes" value="40">
+        <input type="text" id="wmsLayerName" value="tasmax">
+        <input type="text" id="imageLayerName" value="Test animated layer">
     </div>
 </div>
 <div id="abc"> Some extra text </div>
