@@ -34,9 +34,9 @@ WpsClient.prototype.addGifAnimation = function(){
     var wpsclient = new WpsClient(wpsurl, "8090", "12345", myMap);
     
     var wmsUrls = this.myMap.getVisibleWMSLayersUrls();
-    var startTime = $("#startframevalue").val();
-    var endTime = $("#endframevalue").val();
-    var frameDuration = $("#frequency").val();
+    var startTime = $("#startframe").val();
+    var endTime = $("#endframe").val();
+    var frameDuration = parseFloat($("#period").val())/1000.0;
     var aggregation = $("#aggregation").val();
     var layerName = $("#wmsLayerName").val();
     var imageLayerName = $("#imageLayerName").val();

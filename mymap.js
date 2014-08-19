@@ -8,6 +8,21 @@ function getURL(url){
     }).responseText;
 }
 
+/*
+ * Apply the jquery childrens function for a sequential ordered list.
+ * 
+ * @param {jQuery Object} jRoot a jQuery object. (e.g. $($.parseXML(response)) )
+ * 
+ */
+function jChildrens(jRoot, tagNames){
+    var len = tagNames.length;
+    if (len === 0) return null;
+    $currentChild = jRoot.children(tagNames[0])
+    for (var i = 1; i < len; i++){
+        $currentChild = $currentChild.children(tagNames[i]);
+    }
+    return $currentChild;
+}
 
 /*
  * Intersection method based on https://gist.github.com/jamiehs/3364281
@@ -83,15 +98,15 @@ function MyMap(){
     //Add the BaseLayer map
     this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
                          {layers: 'basic'}, {});
-    $("#nextframe").click(function(){_this.nextFrame();});
-    $("#startframe").click(function(){_this.startFrame();});
-    $("#endframe").click(function(){_this.endFrame();});
+    $("#nextframeButton").click(function(){_this.nextFrame();});
+    $("#startframeButton").click(function(){_this.startFrame();});
+    $("#endframeButton").click(function(){_this.endFrame();});
     var animationTimer;
     $("#animate").click(function(){
         if (animationTimer === undefined){
             _this.startAnimation();
             animationTimer=setInterval(function(){_this.runAnimation();},
-                                       parseInt($("#frequency").val()));
+                                       parseInt($("#period").val()));
             $("#animate").val("stop");}
         else{
             clearInterval(animationTimer);
@@ -100,14 +115,6 @@ function MyMap(){
     $("#timeslider").on("input change", function(){_this.frameFromSlider();});
     //TODO: Tooltip for slider$("#timeslider").on("mousemove", function(event){ console.log(event);});
     $("#testbutton").click(function(){
-        //About a year takes some minutes to render 
-        //_this.showTimeFrame("2001-01-17T12:00:00.000Z/2001-11-29T12:00:00.000Z");
-        //A few days
-        _this.showTimeFrame("2001-01-17T12:00:00.000Z/2001-01-29T12:00:00.000Z");
-        //NOTWORKING:_this.showTimeFrame("2001-01-17T12:00:00.000Z/P8D");
-
-        //NOTWORKING:_this.showTimeFrame("2001-01-17T12:00:00.000ZP8D");
-        //_this.LayerFakeAnimation()
         });
     function updateAvailableWMSLayers(){
         var removeableLayers = _this.getWMSNBLNames();
@@ -189,8 +196,8 @@ MyMap.prototype.suggestName = function(url){
     var xmlDoc = $.parseXML(text);
     $xml = $(xmlDoc)
     //Use the explicit path. The first tag might differ slightly, so it is left blank.
-    $t = $xml.children().children("Capability").children("Layer").children("Layer").children("Title")
-    var title = $t.text();
+    $title = jChildrens($xml, ["", "Capability", "Layer", "Layer", "Title"])
+    var title = $title.text();
     var snp = title.split("_")
     var suggestedName;
     //If it follows CORDEX like notation use the first two facets.
@@ -296,7 +303,7 @@ MyMap.prototype.LayerFakeAnimation = function(){
         for (var i=0; i < oldLayers.length; i++){
             oldLayers[i].setVisibility(false);
             }
-        this.fakeAnimation = setTimeout(nextFrame, parseInt($("#frequency").val()))
+        this.fakeAnimation = setTimeout(nextFrame, parseInt($("#period").val()))
         }
     
     this.fakeAnimation = setTimeout(nextFrame, 1000);
@@ -304,8 +311,8 @@ MyMap.prototype.LayerFakeAnimation = function(){
     
 };
 MyMap.prototype.startAnimation = function(){
-    start = $("#startframevalue").html();
-    end = $("#endframevalue").html();
+    start = $("#startframe").val();
+    end = $("#endframe").val();
     aggregation = $("#aggregation").val();
     var times = this.filterTimesteps(this.frameTimes, aggregation, start, end);
     this.animationValues = new AnimationValues(0,times);
@@ -418,11 +425,11 @@ MyMap.prototype.showTimeFrame = function(time){
 //        };
 
 MyMap.prototype.startFrame = function(){
-    $("#startframevalue").html(this.frameTimes[this.frameIndex]);
+    $("#startframe").val(this.frameTimes[this.frameIndex]);
     };
 
 MyMap.prototype.endFrame = function(){
-    $("#endframevalue").html(this.frameTimes[this.frameIndex]);
+    $("#endframe").val(this.frameTimes[this.frameIndex]);
     };
 
 /*

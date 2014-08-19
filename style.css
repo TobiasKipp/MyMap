@@ -11,20 +11,27 @@ input[type=text]{
     width:40px;
 }
 
-input[type=text]#wmsurl{
+#wmsurl{
     width:400px;
 }
-input[type=text]#layername{
+#layername{
     width:200px;
 }
-input[type=text]#imageLayerName{
+#imageLayerName{
     width:200px;
 }
-input[type=text]#wmsLayerName{
+#wmsLayerName {
     width:200px;
+}
+#startframe, #endframe{
+    width:160px;
 }
 input[type=range]{
-    width:820px;
+    margin-left:0px;
+    width:920px;
 }
 
-
+#startspan, #endspan{
+    display:inline-block;
+    white-space:nowrap;
+}

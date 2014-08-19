@@ -39,18 +39,18 @@ function mymap_init(){
 </div>
 <!-- Time control -->
 <input type="range" id="timeslider" min="0" max="0">
-<input type="button" id="nextframe" name="nextframe" value="Next frame">
+<input type="button" id="nextframeButton" name="nextframeButton" value="Next frame">
 <input type="button" id="testbutton" name="test" value="Test">
 <div id="timeline"></div>
-<div id="start">
-    <input type="button" id="startframe" name="startframe" value="This frame">
-    <span>Start:</span>
-    <span id="startframevalue"></span>
-</div">
-<div id="end">
-    <input type="button" id="endframe" name="endframe" value="This frame">
-    <span>End:</span>
-    <span id="endframevalue"></span>
+<div id="timeSelect">
+    <span id="startspan">
+        <input type="button" id="startframeButton" name="startframeButton" value="Start">
+        <input type="text" id="startframe">
+    </span>
+    <span id="endspan">
+        <input type="button" id="endframeButton" name="endframeButton" value="End">
+        <input type="text" id="endframe">
+    </span>
 </div>
 <div id = animation>
     Aggregation
@@ -62,13 +62,13 @@ function mymap_init(){
     </select>
     <div id="realtimerender">
         <input type="button" id="animate" name="animate" value="Animate">
-        Frequency: <input type="text" id="frequency" value="1000">
+        Frequency: <input type="text" id="period" value="1000">
     </div>
     <div id="gifrender">
         <input type="button" id="animateGif" name="animateGif" value="Animate Gif">
-        Maximum gif frames: <input type="text" id="maxframes" value="40">
-        <input type="text" id="wmsLayerName" value="tasmax">
-        <input type="text" id="imageLayerName" value="Test animated layer">
+        <!--Maximum gif frames: <input type="text" id="maxframes" value="40"-->
+        WMS layer name:<input type="text" id="wmsLayerName" value="tasmax">
+        Map layer name:<input type="text" id="imageLayerName" value="Test animated layer">
     </div>
 </div>
 <div id="abc"> Some extra text </div>
