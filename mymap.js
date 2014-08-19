@@ -9,45 +9,12 @@ function getURL(url){
 }
 
 /*
- * Apply the jquery childrens function for a sequential ordered list.
- * 
- * @param {jQuery Object} jRoot a jQuery object. (e.g. $($.parseXML(response)) )
- * 
- */
-function jChildrens(jRoot, tagNames){
-    var len = tagNames.length;
-    if (len === 0) return null;
-    $currentChild = jRoot.children(tagNames[0])
-    for (var i = 1; i < len; i++){
-        $currentChild = $currentChild.children(tagNames[i]);
-    }
-    return $currentChild;
-}
-
-/*
  * Intersection method based on https://gist.github.com/jamiehs/3364281
  */
 function intersection(a,b){
     return $.map(a, function(x){return $.inArray(x, b) < 0 ? null : x;});
 }
 
-/*
- * TimeCache allows to store any Object at a given time (represented by a string).
- * By calling get(time, Constructor, arg1, arg2, ...), the Constructors parameters args1, args2, ...
- * can be set. (e.g. tc.get("2014-08-12", OneValue, "the value"))
- * 
- */
-    function TimeCache(){
-        this.cache = {}
-    }
-    TimeCache.prototype.get = function(time, name, url, params, option){
-        if (!(time in this.cache)){
-            this.cache[time]= new OpenLayers.Layer.WMS(name, url, params, option);
-            this.cache[time].isBaseLayer = false;
-            }
-        return this.cache[time];
-    }
-    TimeCache.prototype.getCacheCount = function(){ return Object.keys(this.cache).length;}
 /*
  * Add a getWeek method to Date using the ISO defintion of week.
  *
@@ -67,114 +34,137 @@ Date.prototype.getWeek = function() {
   // Adjust to Thursday in week 1 and count number of weeks from date to week1.
   return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000
                         - 3 + (week1.getDay() + 6) % 7) / 7);
-}
+};
 
+/*
+ * Storage class for an index and an array of time representing strings. 
+ * Note: Used for live rendered animation in MyMap.
+ */
 function AnimationValues(startIndex, timeValues){
     this.index=startIndex;
     this.frames=timeValues;
-    }
+}
 
 /*
  * MyMap creates a OpenLayers map object and adds basic features and a BaseLayer to it.
  *
+ * Note: Overlay references to a non-base layer in Openlayers. This is used to avoid using 
+ * NonBaseLayer or NBL in method names. Map layer is the layer on the OpenLayers map, while 
+ * WMS layer is the layer in the WMS description.
  */
 function MyMap(){
-    var _this = this;
     var mapOptions = {eventListeners:{"changelayer": function(event){_this.updateOverlays()}}};
     var map = new OpenLayers.Map('map',mapOptions);
     this.map = map;
-    this.timeCaches = {};//For a dictionary of TimeCache objects.
+    this.map.addControl(new OpenLayers.Control.LayerSwitcher());
     //While map stores all Layers for the time update only the overlays are of interest. 
     //To prevent recalculating which ones are overlays every time they are stored in the overlays
     //variable.
     this.overlays = {};
     this.visibleOverlays = [];//used to store which overlays are visible.
     //Add control elements
-    this.layerSwitcher = new OpenLayers.Control.LayerSwitcher();
-    this.map.addControl(this.layerSwitcher);
     this.frameIndex=0;
     this.frameTimes = [];
     this.animationValues;
     //Add the BaseLayer map
     this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
                          {layers: 'basic'}, {});
+    this.addInteraction();
+}
+
+/*
+ * Adds button click and similar events handlers
+ */
+MyMap.prototype.addInteraction = function(){
+    var _this = this;
     $("#nextframeButton").click(function(){_this.nextFrame();});
-    $("#startframeButton").click(function(){_this.startFrame();});
-    $("#endframeButton").click(function(){_this.endFrame();});
-    var animationTimer;
-    $("#animate").click(function(){
-        if (animationTimer === undefined){
-            _this.startAnimation();
-            animationTimer=setInterval(function(){_this.runAnimation();},
-                                       parseInt($("#period").val()));
-            $("#animate").val("stop");}
-        else{
-            clearInterval(animationTimer);
-            $("#animate").val("animate");
-            animationTimer=undefined;}});
+    $("#startframeButton").click(function(){_this.startFrameFromIndex();});
+    $("#endframeButton").click(function(){_this.endFrameFromIndex();});
+    this.animationTimer;
+    $("#animate").click(function(){_this.handleLiveAnimation();});
     $("#timeslider").on("input change", function(){_this.frameFromSlider();});
     //TODO: Tooltip for slider$("#timeslider").on("mousemove", function(event){ console.log(event);});
-    $("#testbutton").click(function(){
-        });
-    function updateAvailableWMSLayers(){
-        var removeableLayers = _this.getWMSNBLNames();
-        var text=""
-        $(removeableLayers).each(function(){
-            var name = this.name;
+    $("#testbutton").click(function(){ _this.test();});
+    $("#addwms").click(function(){ _this.addWMSFromForm();});
+    $("#wmsurl").on("blur", function(){ _this.updateWMSForm();});
+    $("#removewms").click(function(){ _this.removeSelectedMapLayer();});
+}
+
+MyMap.prototype.removeSelectedMapLayer = function(){
+    var name = $("#removeMapLayerName").val();
+    var _this = this;
+    $layers = $(_this.map.layers);
+    $layers.each(function(){
+        if (this.name == name){
+            _this.map.removeLayer(this);
+        } 
+    });
+    this.updateAvailableMapLayers();
+};
+
+MyMap.prototype.updateWMSForm = function(){
+    var url = $("#wmsurl").val();
+    var names = this.getLayers(url)
+    var text = "";
+    for (var i = 0; i < names.length; i++){
+        var name = names[i];
+        if (["lon","lat"].indexOf(name) == -1){
             text+= '<option value="'+name+'">'+name+'</option>';
-            })
-        $("#removeLayerName").html(text);
-        };
-    /*
-     * Add the a WMS layer
-     */
-    $("#addwms").click(function(){
-        //check if all important parameters are set
-        var url = $("#wmsurl").val().split("?")[0];
-        if (url === "")return;
-        var layer = $("#layer").val();
-        if (layer === null) return;
-        //if the layer name is empty generate one
-        if ($("#layername").val() == ""){
-            $("#layername").val(_this.suggestName(url));
             }
-        var layername = $("#layername").val();
-        if (_this.isWMSNBLNameUsed(layername)){
-            alert("The name " + layername + " is aready in use.");
-            return;
-            }
+        }
+    $("#layer").html(text);
+};
+ 
+MyMap.prototype.addWMSFromForm = function(){
+    //check if all important parameters are set
+    var url = $("#wmsurl").val().split("?")[0];
+    if (url === "")return;
+    var layer = $("#layer").val();
+    if (layer === null) return;
+    //if the layer name is empty generate one
+    if ($("#layername").val() == ""){
+        $("#layername").val(this.suggestName(url));
+        }
+    var layername = $("#layername").val();
+    if (this.isWMSOverlayNameUsed(layername)){
+        alert("The name " + layername + " is aready in use.");
+        return;
+        }
 
-        _this.addWMSOverlay(layername, url, layer);
-        updateAvailableWMSLayers();
-        });
-    $("#wmsurl").on("blur", function(){
-        var url = $("#wmsurl").val();
-        var names = _this.getLayers(url)
-        var text = "";
-        for (var i = 0; i < names.length; i++){
-            var name = names[i];
-            if (["lon","lat"].indexOf(name) == -1){
-                text+= '<option value="'+name+'">'+name+'</option>';
-                }
-            }
-        $("#layer").html(text);
-        });
+    this.addWMSOverlay(layername, url, layer);
+    this.updateAvailableMapLayers();
+};
 
-    /*
-     * remove all WMS layers with the same name (In normal web use it should be only one).
-     */
-    $("#removewms").click(function(){
-        var name = $("#removeLayerName").val();
-        $layers = $(_this.map.layers);
-        $layers.each(function(){
-            if (this.name == name){
-                _this.map.removeLayer(this);
-                } 
-            });
-        updateAvailableWMSLayers();
-        });
+MyMap.prototype.updateAvailableMapLayers = function(){
+    var removeableLayers = this.getWMSOverlayNames();
+    var text="";
+    $(removeableLayers).each(function(){
+        var name = this.name;
+        text+= '<option value="'+name+'">'+name+'</option>';
+    });
+    $("#removeMapLayerName").html(text);
+};
 
-    };
+
+/*
+ * When the live rendered animation is not running the animation started and updates with the 
+ * value set in period at the time of clicking the button. The button text changes to "Stop".
+ *
+ * If the animation is running the timer is cleared and the button is changed back to "Animate".
+ */
+MyMap.prototype.handleLiveAnimation = function(){
+    if (this.animationTimer === undefined){
+        this.startAnimation();
+        var _this = this;
+        this.animationTimer = setInterval(function(){_this.runAnimation();},
+                                          parseInt($("#period").val()));
+        $("#animate").val("Stop");
+    }
+    else{
+        clearInterval(this.animationTimer);
+        $("#animate").val("Animate");
+    }
+};
 MyMap.prototype.getCapabilties = function(url){
     var urlhead = url.split("?")[0];
     var request = "?request=GetCapabilities&service=WMS&version=1.1.0"
@@ -191,13 +181,18 @@ MyMap.prototype.getLayers = function(url){
     return names;
     };
 
-MyMap.prototype.suggestName = function(url){
-    var text = this.getCapabilties(url);
-    var xmlDoc = $.parseXML(text);
-    $xml = $(xmlDoc)
-    //Use the explicit path. The first tag might differ slightly, so it is left blank.
-    $title = jChildrens($xml, ["", "Capability", "Layer", "Layer", "Title"])
-    var title = $title.text();
+/*
+ * The wms_url is used to get the capabilities. It is assumed that there is only one
+ * entry matching to the Selector "Capability > Layer > Layer > Title" and that it has
+ * a naming pattern similar to CORDEX. It will return the title up to and excluding the 
+ * second "_". The length of the name is limited to 50 characters.
+ *
+ * @param {string} wms_url An url to a WMS server.
+ */
+MyMap.prototype.suggestName = function(wms_url){
+    var capabilitiesXMLString = this.getCapabilties(wms_url);
+    $xmlCaps = $($.parseXML(capabilitiesXMLString));
+    var title = $xmlCaps.find("Capability>Layer>Layer>Title").text();
     var snp = title.split("_")
     var suggestedName;
     //If it follows CORDEX like notation use the first two facets.
@@ -207,11 +202,10 @@ MyMap.prototype.suggestName = function(url){
     return suggestedName;
     };
 /*
- * Returs the names of the selectable non-base-WMS layers.
+ * Returs the names of the selectable WMS overlays.
  * Used for name colission, removal selection of WMS layers.
- * (NBL=NonBaseLayer)
  */
-MyMap.prototype.getWMSNBLNames = function(){
+MyMap.prototype.getWMSOverlayNames = function(){
     $layers = $(this.map.layers);
     var removeableLayers =[]
     $layers.each(function(){
@@ -222,107 +216,106 @@ MyMap.prototype.getWMSNBLNames = function(){
     return removeableLayers;
     }
 
-MyMap.prototype.isWMSNBLNameUsed = function(layername){
-    $layers = $(this.getWMSNBLNames());
-    layernames = []
+MyMap.prototype.isWMSOverlayNameUsed = function(layername){
+    $layers = $(this.getWMSOverlayNames());
+    layernames = [];
     $layers.each(function(){
         layernames.push(this.name);
-        });
+    });
     return (layernames.indexOf(layername) >= 0);
-    }
-
-MyMap.prototype.LayerFakeAnimation = function(){
-    var steps = [ "2001-01-01T12:00:00.000Z",
-                  "2001-01-02T12:00:00.000Z",
-                  "2001-01-03T12:00:00.000Z",
-                  "2001-01-04T12:00:00.000Z",
-                  "2001-01-05T12:00:00.000Z",
-                  "2001-01-06T12:00:00.000Z",
-                  "2001-01-07T12:00:00.000Z",
-                  "2001-01-08T12:00:00.000Z",
-                  "2001-01-09T12:00:00.000Z",
-                  "2001-01-10T12:00:00.000Z",
-                  "2001-01-11T12:00:00.000Z",
-                  "2001-01-12T12:00:00.000Z",
-                  "2001-01-13T12:00:00.000Z",
-                  "2001-01-14T12:00:00.000Z",
-                  "2001-01-15T12:00:00.000Z",
-                  "2001-01-16T12:00:00.000Z",
-                  "2001-01-17T12:00:00.000Z",
-                  "2001-01-18T12:00:00.000Z",
-                  "2001-01-19T12:00:00.000Z",
-                  "2001-01-20T12:00:00.000Z",
-                  "2001-01-21T12:00:00.000Z",
-                  "2001-01-22T12:00:00.000Z",
-                  "2001-01-23T12:00:00.000Z",
-                  "2001-01-24T12:00:00.000Z",
-                  "2001-01-25T12:00:00.000Z",
-                  "2001-01-26T12:00:00.000Z",
-                  "2001-01-27T12:00:00.000Z",
-                  "2001-01-28T12:00:00.000Z",
-                  "2001-01-29T12:00:00.000Z",
-                  "2001-01-30T12:00:00.000Z",
-                  "2001-01-31T12:00:00.000Z",
-                  ]
-    var name = "EUR-44-tasmax"
-    var url = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
-    var layername = "tasmax";
-    var timeLayers = {};//map layername to a list of layers
-    for (var i = 0; i < steps.length; i++){timeLayers[steps[i]] = []}
-    //Create the Layers
-    for (var i = 0; i < steps.length; i++){
-        var time = steps[i];
-        var layer = new OpenLayers.Layer.WMS(name, url, {LAYERS:layername, transparent: true,
-                                             time:time}, {singleTile:true, isBaseLayer:false});
-        this.map.addLayer(layer);
-        layer.setVisibility(true);
-        timeLayers[time].push(layer); 
-        }
-    //Turn all layers invisible
-    for (var i = 0; i < steps.length; i++){
-        var layers = timeLayers[steps[i]];
-        for (var j=0; j < layers.length; j++){
-            layers[j].setVisibility(false);
-            }
-        }
-    //Initialize animation
-    var currentIndex = 0;
-    startLayers = timeLayers[steps[0]];
-    for (var i = 0; i < startLayers.length; i++){
-        startLayers[i].setVisibility(true);
-        }
-    //Define the method to run on timeout
-    function nextFrame(){
-        var oldLayers = timeLayers[steps[currentIndex]]
-        currentIndex++;
-        if(currentIndex >= steps.length){currentIndex = 0;}
-        var newLayers = timeLayers[steps[currentIndex]];
-        for (var i=0; i < newLayers.length; i++){
-            newLayers[i].setVisibility(true);
-            }
-        for (var i=0; i < oldLayers.length; i++){
-            oldLayers[i].setVisibility(false);
-            }
-        this.fakeAnimation = setTimeout(nextFrame, parseInt($("#period").val()))
-        }
-    
-    this.fakeAnimation = setTimeout(nextFrame, 1000);
-    
-    
 };
+
+////////MyMap.prototype.LayerFakeAnimation = function(){
+////////    var steps = [ "2001-01-01T12:00:00.000Z",
+////////                  "2001-01-02T12:00:00.000Z",
+////////                  "2001-01-03T12:00:00.000Z",
+////////                  "2001-01-04T12:00:00.000Z",
+////////                  "2001-01-05T12:00:00.000Z",
+////////                  "2001-01-06T12:00:00.000Z",
+////////                  "2001-01-07T12:00:00.000Z",
+////////                  "2001-01-08T12:00:00.000Z",
+////////                  "2001-01-09T12:00:00.000Z",
+////////                  "2001-01-10T12:00:00.000Z",
+////////                  "2001-01-11T12:00:00.000Z",
+////////                  "2001-01-12T12:00:00.000Z",
+////////                  "2001-01-13T12:00:00.000Z",
+////////                  "2001-01-14T12:00:00.000Z",
+////////                  "2001-01-15T12:00:00.000Z",
+////////                  "2001-01-16T12:00:00.000Z",
+////////                  "2001-01-17T12:00:00.000Z",
+////////                  "2001-01-18T12:00:00.000Z",
+////////                  "2001-01-19T12:00:00.000Z",
+////////                  "2001-01-20T12:00:00.000Z",
+////////                  "2001-01-21T12:00:00.000Z",
+////////                  "2001-01-22T12:00:00.000Z",
+////////                  "2001-01-23T12:00:00.000Z",
+////////                  "2001-01-24T12:00:00.000Z",
+////////                  "2001-01-25T12:00:00.000Z",
+////////                  "2001-01-26T12:00:00.000Z",
+////////                  "2001-01-27T12:00:00.000Z",
+////////                  "2001-01-28T12:00:00.000Z",
+////////                  "2001-01-29T12:00:00.000Z",
+////////                  "2001-01-30T12:00:00.000Z",
+////////                  "2001-01-31T12:00:00.000Z",
+////////                  ]
+////////    var name = "EUR-44-tasmax"
+////////    var url = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
+////////    var layername = "tasmax";
+////////    var timeLayers = {};//map layername to a list of layers
+////////    for (var i = 0; i < steps.length; i++){timeLayers[steps[i]] = []}
+////////    //Create the Layers
+////////    for (var i = 0; i < steps.length; i++){
+////////        var time = steps[i];
+////////        var layer = new OpenLayers.Layer.WMS(name, url, {LAYERS:layername, transparent: true,
+////////                                             time:time}, {singleTile:true, isBaseLayer:false});
+////////        this.map.addLayer(layer);
+////////        layer.setVisibility(true);
+////////        timeLayers[time].push(layer); 
+////////        }
+////////    //Turn all layers invisible
+////////    for (var i = 0; i < steps.length; i++){
+////////        var layers = timeLayers[steps[i]];
+////////        for (var j=0; j < layers.length; j++){
+////////            layers[j].setVisibility(false);
+////////            }
+////////        }
+////////    //Initialize animation
+////////    var currentIndex = 0;
+////////    startLayers = timeLayers[steps[0]];
+////////    for (var i = 0; i < startLayers.length; i++){
+////////        startLayers[i].setVisibility(true);
+////////        }
+////////    //Define the method to run on timeout
+////////    function nextFrame(){
+////////        var oldLayers = timeLayers[steps[currentIndex]]
+////////        currentIndex++;
+////////        if(currentIndex >= steps.length){currentIndex = 0;}
+////////        var newLayers = timeLayers[steps[currentIndex]];
+////////        for (var i=0; i < newLayers.length; i++){
+////////            newLayers[i].setVisibility(true);
+////////            }
+////////        for (var i=0; i < oldLayers.length; i++){
+////////            oldLayers[i].setVisibility(false);
+////////            }
+////////        this.fakeAnimation = setTimeout(nextFrame, parseInt($("#period").val()))
+////////        }
+////////    
+////////    this.fakeAnimation = setTimeout(nextFrame, 1000);
+////////};
+
 MyMap.prototype.startAnimation = function(){
     start = $("#startframe").val();
     end = $("#endframe").val();
     aggregation = $("#aggregation").val();
     var times = this.filterTimesteps(this.frameTimes, aggregation, start, end);
     this.animationValues = new AnimationValues(0,times);
-    }
+};
 
 MyMap.prototype.runAnimation = function(){
     var i = this.animationValues.index;
     var time = this.animationValues.frames[i];
     //update the silder. This will cause the event "input change" for #timeslider
-    j = this.frameTimes.indexOf(time);
+    var j = this.frameTimes.indexOf(time);
     $("#timeslider").val(j);
     //show the new frame
     this.showTimeFrame(time);
@@ -330,25 +323,25 @@ MyMap.prototype.runAnimation = function(){
     i++;
     if (i >= this.animationValues.frames.length) i = 0;
     this.animationValues.index = i;
-    }
-
-MyMap.prototype.startGifAnimation = function(){
-    start = $("#startframevalue").html();
-    end = $("#endframevalue").html();
-    aggregation = $("#aggregation").val();
-    var times = this.filterTimesteps(this.frameTimes, aggregation, start, end);
-    var limitFrames = $("#maxframes").val();
-    times = times.slice(0,limitFrames);
-    var time = times.join(",");
-    for (var i = 0; i < this.visibleOverlays.length; i++){
-        var overlay = this.visibleOverlays[i];
-        //var animatedurl = overlay.url+"?"
-        //animatedurl += "TIME="+time;
-        //animatedurl += "&TRANSPARENT=true";
-        //animatedurl += "&FORMAT=image/gif";
-        overlay.mergeNewParams({'time':time, format:"image/gif"});
-    }
 };
+
+//////MyMap.prototype.startGifAnimation = function(){
+//////    start = $("#startframevalue").html();
+//////    end = $("#endframevalue").html();
+//////    aggregation = $("#aggregation").val();
+//////    var times = this.filterTimesteps(this.frameTimes, aggregation, start, end);
+//////    var limitFrames = $("#maxframes").val();
+//////    times = times.slice(0,limitFrames);
+//////    var time = times.join(",");
+//////    for (var i = 0; i < this.visibleOverlays.length; i++){
+//////        var overlay = this.visibleOverlays[i];
+//////        //var animatedurl = overlay.url+"?"
+//////        //animatedurl += "TIME="+time;
+//////        //animatedurl += "&TRANSPARENT=true";
+//////        //animatedurl += "&FORMAT=image/gif";
+//////        overlay.mergeNewParams({'time':time, format:"image/gif"});
+//////    }
+//////};
 
 
 /*
@@ -360,77 +353,80 @@ MyMap.prototype.updateOverlays = function(){
     for (name in this.overlays){
         var overlay = this.overlays[name];
         if(overlay.visibility){
-            this.visibleOverlays.push(overlay);}}
-    this.frameTimes = [];
+            this.visibleOverlays.push(overlay);
+        }
+    }
     if (this.visibleOverlays.length > 0){
         this.frameTimes = this.visibleOverlays[0].timesteps;
         for (var i=1; i < this.visibleOverlays.length; i++){
-            this.frameTimes = intersection(this.frameTimes, this.visibleOverlays[i].timesteps);}}
+            this.frameTimes = intersection(this.frameTimes, this.visibleOverlays[i].timesteps);
+        }
+    }
+    else{//no visible frames => no timesteps to select from
+        this.frameTimes = [];
+    }
     //update the sliders maximum value
     $("#timeslider").attr('max', this.frameTimes.length);
-    };
+};
 
 /*
- * Change the parameters such that the next frame with a new time will be generated,
- * if a valid time value exists. 
+ * Show the next frame in the complete list of available timeframes
+ * in all visible overlays.
  */
 MyMap.prototype.nextFrame = function(){
     this.frameIndex+=1;
     $("#timeslider").val(this.frameIndex);
     $("#timeslider").attr("max",this.frameTimes.length);
     this.showFrame();
-    };
+};
 
+/*
+ * Select a frame from the complete list of available timeframes
+ * in all visible overlays.
+ */
 MyMap.prototype.frameFromSlider = function(){
     this.frameIndex = parseInt($("#timeslider").val());
     this.showFrame();
-    };
+};
 
+/*
+ * Find the time value for the currently selected frame and 
+ * request to update the visible layers with this time.
+ */
 MyMap.prototype.showFrame = function(){
-    if (this.frameIndex >= this.frameTimes.length){ 
-        this.frameIndex = 0;}
+    if (this.frameIndex >= this.frameTimes.length){this.frameIndex = 0;}
     if (this.frameTimes.length != 0){
         var time = this.frameTimes[this.frameIndex];
         this.showTimeFrame(time);
-        }
     }
+};
 
-
+/*
+ * Update the visible layers to show the provided time. 
+ * 
+ * Note: Does not prevent using invalid time values. 
+ */
 MyMap.prototype.showTimeFrame = function(time){
-        $("#abc").html(time);
-        for (var i=0; i < this.visibleOverlays.length; i++){
-            overlay = this.visibleOverlays[i];
-            overlay.mergeNewParams({'time':time,  format:"image/gif"});
-            }
-        };
-    
-//MyMap.prototype.showTimeFrame = function(time){
-//        $("#abc").html(time);
-//        for (var i=0; i < this.map.layers.length; i++){
-//            overlay = this.map.layers[i];
-//            if (overlay.isBaseLayer) continue;//Must be an overlay layer
-//            if (!overlay.visibility) continue;//Must be visible
-//            name = overlay.name;
-//            url = overlay.url;
-//            params = {layers: overlay.params.LAYERS, transparent: true, time:time};
-//            options = {singleTile:true, isBaseLayer: false}
-//            this.map.layers[i] = this.timeCaches[name].get(time, name, url, params, options);
-//            //newOverlay = this.timeCaches[name].get(time, name, url, params, options);
-//            //newOverlay.setVisibility(true);
-//            //console.log(name,", ", url, ",",  params, ",",  options);
-//            //console.log("overlay is old="+ (overlay == this.map.layers[i]))
-//            //this.map.layers[i].setVisibility(true);
-//            
-//            }
-//        };
+    $("#abc").html(time);
+    for (var i=0; i < this.visibleOverlays.length; i++){
+        overlay = this.visibleOverlays[i];
+        overlay.mergeNewParams({'time':time});
+    }
+};
 
-MyMap.prototype.startFrame = function(){
+/*
+ * Sets the value of the start time input element to the currently indexed time.
+ */
+MyMap.prototype.startFrameFromIndex = function(){
     $("#startframe").val(this.frameTimes[this.frameIndex]);
-    };
+};
 
-MyMap.prototype.endFrame = function(){
+/*
+ * Sets the value of the end time input element to the currently indexed time.
+ */
+MyMap.prototype.endFrameFromIndex = function(){
     $("#endframe").val(this.frameTimes[this.frameIndex]);
-    };
+};
 
 /*
  * Add a BaseLayer to the map. Only one BaseLayer can be active at a time (selected with radiobox).
@@ -463,7 +459,6 @@ MyMap.prototype.addWMSOverlay = function(name, url, layerName, options){
     this.addTimesteps(wmsLayer);
     this.overlays[name] = wmsLayer;
     this.map.addLayer(wmsLayer);
-    this.timeCaches[name] = new TimeCache();
     };
 
 
@@ -664,7 +659,6 @@ MyMap.prototype.bist = function(){
     var assumedFTY = [timestepsY[0], timestepsY[2], timestepsY[4], timestepsY[5]];
     testFilterTimesteps(filteredTimestepsY, assumedFTY);
 
-    //Test TimeCache with basic Objects.
     function testEqual(a, b){
              if(a === b) testsOkay++;
              else{
@@ -672,19 +666,6 @@ MyMap.prototype.bist = function(){
                  console.log(a + " is not equal to " + b);
                  }
              };
-    function MyObject(value){this.value=value;}
-    var ca = new TimeCache();
-    var x = ca.getCacheCount();
-    testEqual(x,0);
-    var one = ca.get("2014-04-04", MyObject, "1" );
-    testEqual(one.value,"1");
-    x = ca.getCacheCount();
-    testEqual(x,1);
-    var nOne = ca.get("2014-04-05", MyObject, 1 );
-    testEqual(nOne.value,1);
-    x = ca.getCacheCount();
-    testEqual(x,2);
-    testEqual(ca.get("2014-04-05").value,1);
 
 
 
