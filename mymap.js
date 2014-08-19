@@ -1,3 +1,7 @@
+/********************
+ * HELPER FUNCTIONS *
+ ********************/
+
 //method from http://stackoverflow.com/questions/133310/how-can-i-get-jquery-to-perform-a-synchronous-rather-than-asynchronous-ajax-re
 function getURL(url){
     return $.ajax({
@@ -45,6 +49,9 @@ function AnimationValues(startIndex, timeValues){
     this.frames=timeValues;
 }
 
+/************************
+ * MYMAP IMPLEMENTATION *
+ ************************/
 /*
  * MyMap creates a OpenLayers map object and adds basic features and a BaseLayer to it.
  *
@@ -53,6 +60,7 @@ function AnimationValues(startIndex, timeValues){
  * WMS layer is the layer in the WMS description.
  */
 function MyMap(){
+    var _this = this;
     var mapOptions = {eventListeners:{"changelayer": function(event){_this.updateOverlays()}}};
     var map = new OpenLayers.Map('map',mapOptions);
     this.map = map;
@@ -62,18 +70,26 @@ function MyMap(){
     //variable.
     this.overlays = {};
     this.visibleOverlays = [];//used to store which overlays are visible.
-    //Add control elements
     this.frameIndex=0;
     this.frameTimes = [];
     this.animationValues;
-    //Add the BaseLayer map
-    this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
-                         {layers: 'basic'}, {});
+    this.addBaseLayers();
     this.addInteraction();
 }
 
 /*
- * Adds button click and similar events handlers
+ * Add the default BaseLayers to the map.
+ *
+ * Note: Currently there is no option to add further BaseLayers
+ */
+MyMap.prototype.addBaseLayers = function(){
+    //Add the BaseLayer map
+    this.addWMSBaseLayer("Worldmap OSGeo", "http://vmap0.tiles.osgeo.org/wms/vmap0?",
+                         {layers: 'basic'}, {});
+};
+
+/*
+ * Bind events to specific actions.
  */
 MyMap.prototype.addInteraction = function(){
     var _this = this;
