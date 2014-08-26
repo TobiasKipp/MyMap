@@ -37,36 +37,39 @@ input[type=range]{
 }
 
 #tabs{
-    padding: 0px;
+    padding: 0;
+    margin: 0;
     border-radius: 6px;
-    background-color: #00ff00;
+    background-color: #ffffff;
+    border-bottom: 1px solid #eeeeee;
 }
 
 /*The content area*/
 #tabs .ui-tabs-panel {
   background-color: #ffffff;
   color: #000000;
+  display: inline-block;
+  border:1px solid #aaaaaa;
 }
 
 /*tabs bar*/
 #tabs .ui-widget-header{
-    padding-top:8px;
     background:none;
     border:none;
-    border-top-left-radius:6px;
-    border-top-right-radius:6px;
-    border-bottom: 1px solid #000000;
-    border-radius: 0px;
-    padding-bottom:2px;
 }
-/*all tab elements*/
-#tabs .ui-tabs-nav a{
+#tabs ul{
+  list-style:none;
+  border-bottom: 1px solid #000000;
+}
+#tabs ul li a{
+  float:left;
+  min-width:100px;
+  display:inline-block;
+  white-space: normal;
+  text-decoration: none;
+  text-align: center;
+  font-size: 24px;
   color: #000000;
-  padding-left:10px;
-  margin-left: -2.9px;
-  margin-right: -2.9px;
-  margin-bottom: -2.9px;
-  margin-top:-10px;
   border: 1px solid #000000;
   background-color: #aaaaaa;
   border-top-left-radius: 6px;
@@ -74,7 +77,7 @@ input[type=range]{
 }
 /* fix x position of first tab*/
 #tabs .ui-tabs-nav:first-child{
-  padding-left:2px;
+  padding-left:0px;
 }
 /* selected tab*/
 #tabs .ui-tabs-active a{
