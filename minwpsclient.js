@@ -25,14 +25,15 @@ function WpsClient(wpsUrl, wpsoutputsPort, proxyport, myMap){
     this.timeout;
     this.myMap = myMap;
     this.delay = 2000;//time between request for WPS status in ms.
+    this.addCounter = 0;//A pseudo lock to prevent adding more often than intended.
     _this = this;
-    $("#animateGif").click(function(){_this.addGifAnimation();});
+    $("#animateGif").click(function(){
+        _this.addGifAnimation();
+        });
 };
 
 WpsClient.prototype.addGifAnimation = function(){
     var wpsurl = "http://localhost:12345/wps";
-    var wpsclient = new WpsClient(wpsurl, "8090", "12345", myMap);
-    
     var wmsUrls = this.myMap.getVisibleWMSLayersUrls();
     var startTime = $("#startframe").val();
     var endTime = $("#endframe").val();
@@ -40,12 +41,14 @@ WpsClient.prototype.addGifAnimation = function(){
     var aggregation = $("#aggregation").val();
     var layerName = $("#wmsLayerName").val();
     var imageLayerName = $("#imageLayerName").val();
-    wpsclient.addAnimation(wmsUrls, startTime, endTime, frameDuration, aggregation, layerName,
+    this.addCounter++;
+    this.addAnimation(wmsUrls, startTime, endTime, frameDuration, aggregation, layerName,
                            imageLayerName);
 };
 
 WpsClient.prototype.addAnimation = function(wmsUrls, startTime, endTime, frameDuration,
                                             aggregation, layerName, imageLayerName){
+    console.log(this.addCounter);
     var wmsUrlsString = wmsUrls[0];
     for (var i = 1; i < wmsUrls.length; i++){
         wmsUrlsString += ";wms_urls=" + wmsUrls[i];
@@ -69,6 +72,7 @@ WpsClient.prototype.addAnimation = function(wmsUrls, startTime, endTime, frameDu
     //CORS workaround on statusLocation
     statusLocation = statusLocation.replace(":"+this.wpsoutputsPort, ":"+this.proxyport)
     var finished = false;
+    console.log(this.addCounter);
     this.HandleProcessFinished(statusLocation, finished, imageLayerName);
 }
 
@@ -83,6 +87,11 @@ WpsClient.prototype.getStatusLocation = function(xmlString){
 
 WpsClient.prototype.isProcessFinished = function(url,finished){
     var responseText = getURL(url);
+    var hasException = (responseText.indexOf("<ows:ExceptionText>") > -1);
+    if (hasException) {
+        console.log("WPS process failed to generate a response. Check if all inputs are provided");
+        this.addCounter--;
+    }
     finished = (responseText.indexOf("<wps:ProcessSucceeded>") > -1);
     return finished
 }
@@ -109,16 +118,20 @@ WpsClient.prototype.getReference = function(processSucceededResponse, outputname
  * uses branches and timeouts to emulate a sleep.
  */
 WpsClient.prototype.HandleProcessFinished = function(url, finished, imageLayerName){
-    var _this = this;
-    this.timeout = setTimeout(function(){finished = _this.isProcessFinished(url,finished)}, this.delay);
-    if (finished) {
-        clearTimeout(this.timeout);
-        processSucceededResponse = getURL(url);
-        imageref = this.getReference(processSucceededResponse, "animated_gif");
-        this.myMap.addImage(imageLayerName, imageref);
-    }
-    else{
-        setTimeout(function(){_this.HandleProcessFinished(url, finished, imageLayerName)}, this.delay);
+    console.log("****" + this.addCounter);
+    if (this.addCounter >0){
+        var _this = this;
+        this.timeout = setTimeout(function(){finished = _this.isProcessFinished(url,finished)}, this.delay);
+        if (finished) {
+            this.addCounter--;
+            clearTimeout(this.timeout);
+            processSucceededResponse = getURL(url);
+            imageref = this.getReference(processSucceededResponse, "animated_gif");
+            this.myMap.addImage(imageLayerName, imageref);
+        }
+        else{
+            setTimeout(function(){_this.HandleProcessFinished(url, finished, imageLayerName)}, this.delay);
+        }
     }
     
 }

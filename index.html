@@ -1,77 +1,110 @@
 <!doctype html>
 <html>
 <head>
-<link rel="stylesheet" type="text/css" href="style.css">
-<script type="text/javascript" src="OpenLayers.js"></script>
-<script type="text/javascript" src="jquery-2.1.1.min.js"></script>
-<script type="text/javascript" src="minwpsclient.js"></script>
-<script type="text/javascript" src="mymap.js"></script>
-
-<script type="text/javascript">
-var wmsurl = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
-var wmsurl2 = "http://localhost:12345/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAINT_evaluation_r1i1p1_KNMI-RACMO22T_v1_day_20010101-20051231.nc"
-//var allowedTimeValues = ["2001-08-01T12:00:00Z", "2002-08-01T12:00:00Z", "2003-08-01T12:00:00Z"]
-var myMap = null;
-function mymap_init(){
-    myMap = new MyMap();
-    wpsClient = new WpsClient("http://localhost:12345/wps", "8090", "12345", myMap);
-    myMap.map.zoomToMaxExtent();
-    myMap.map.zoomIn();
-
-};
-</script>
+    <script type="text/javascript" src="OpenLayers.js"></script>
+    <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="bootstrap-3.2.0-dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="bootstrap-3.2.0-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap-3.2.0-dist/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="minwpsclient.js"></script>
+    <script type="text/javascript" src="mymap.js"></script>
+    
+    <script type="text/javascript">
+    var wmsurl = "http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc";
+    var wmsurl2 = "http://localhost:12345/thredds/wms/test/tasmax_AFR-44_ECMWF-ERAINT_evaluation_r1i1p1_KNMI-RACMO22T_v1_day_20010101-20051231.nc"
+    //var allowedTimeValues = ["2001-08-01T12:00:00Z", "2002-08-01T12:00:00Z", "2003-08-01T12:00:00Z"]
+    var myMap = null;
+    function mymap_init(){
+        myMap = new MyMap();
+        wpsClient = new WpsClient("http://localhost:12345/wps", "8090", "12345", myMap);
+        myMap.map.zoomToMaxExtent();
+        myMap.map.zoomIn();
+    
+    };
+        $(function(){
+            $( "#tabs a" ).click(function(e){
+                e.preventDefault();
+                $(this).tab("show");
+            });
+        });
+    </script>
 </head>
 <body onload="mymap_init()">
-
 <div id="map" class="smallmap"></div> 
-<!--Add WMS -->
-<div id="addWMSdiv">
-    <input type="text" id="wmsurl" name="wmsurl" value="http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc">
-    <select id="layer">
-    </select>
-    <input type="text" id="layername" name="layername">
-    <input type="button" id="addwms" value="Add WMS">
-</div>
-<!--Remove WMS -->
-<div id="removeWMSdiv">
-    <select id="removeMapLayerName"></select>
-    <input type="button" id="removewms" value="Remove WMS">
-</div>
-<!-- Time control -->
-<input type="range" id="timeslider" min="0" max="0">
-<input type="button" id="nextframeButton" name="nextframeButton" value="Next frame">
-<input type="button" id="testbutton" name="test" value="Test">
-<div id="timeline"></div>
-<div id="timeSelect">
-    <span id="startspan">
-        <input type="button" id="startframeButton" name="startframeButton" value="Start">
-        <input type="text" id="startframe">
-    </span>
-    <span id="endspan">
-        <input type="button" id="endframeButton" name="endframeButton" value="End">
-        <input type="text" id="endframe">
-    </span>
-</div>
-<div id = animation>
-    Aggregation
-    <select id=aggregation>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-    </select>
-    <div id="realtimerender">
-        <input type="button" id="animate" name="animate" value="Animate">
-        Period (ms): <input type="text" id="period" value="1000">
+<div id="mapcontrol">
+    <div id="globalvisible">
+        <div id="timeline"></div>
+        <input type="range" id="timeslider" min="0" max="0">
+        <input type="button" id="nextframeButton" name="nextframeButton" value="Next frame">
+        <div>Currently selected datetime: <span id="currentDateTime"></span> </div>
     </div>
-    <div id="gifrender">
-        <input type="button" id="animateGif" name="animateGif" value="Animate Gif">
-        <!--Maximum gif frames: <input type="text" id="maxframes" value="40"-->
-        WMS layer name:<input type="text" id="wmsLayerName" value="tasmax">
-        Map layer name:<input type="text" id="imageLayerName" value="Test animated layer">
+    <!--tabs-->
+    <div id="tabs">
+        <ul id ="tabsul" class="nav nav-tabs" tole="tablist">
+            <li class="active"><a href="#addWMSdiv">Add Layer</a></li>
+            <li><a href="#removeWMSdiv">Remove Layer</a></li>
+            <li><a href="#animatediv">Animate</a></li>
+        </ul>
+        <div class="tab-content">
+            <!--Add WMS -->
+            <div id="addWMSdiv" class="tab-pane active">
+                <div>
+                    <label for="wmsurl">WMS URL:</label>
+                    <input type="text" id="wmsurl" name="wmsurl" value="http://localhost:12345/thredds/wms/test/tasmax_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_SMHI-RCA4_v1_day_20010101-20051231.nc">
+                </div>
+                <div>
+                    <label for="layer">WMS Layer name:</label>
+                    <select id="layer"></select>
+                </div>
+                <div>
+                    <label for="layername">Title:</label>
+                    <input type="text" id="layername" name="layername">
+                </div>
+                <input type="button" id="addwms" value="Add WMS">
+            </div>
+            <!--Remove WMS -->
+            <div id="removeWMSdiv" class="tab-pane">
+                <select id="removeMapLayerName"></select>
+                <input type="button" id="removewms" value="Remove WMS">
+            </div>
+            <!-- Time control -->
+      
+            <div id="animatediv" class="tab-pane">
+                <div id="timeSelect">
+                    <span id="startspan">
+                        <input type="button" id="startframeButton" name="startframeButton" value="Start">
+                        <input type="text" id="startframe">
+                    </span>
+                    <span id="endspan">
+                        <input type="button" id="endframeButton" name="endframeButton" value="End">
+                        <input type="text" id="endframe">
+                    </span>
+                    Aggregation
+                    <select id=aggregation>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                    Time per frame (ms): <input type="text" id="period" value="1000">
+                    <br><br>
+                    <div id="realtimerender">
+                        Animate currently selected layer in live mode:<br>
+                        <input type="button" id="animate" name="animate" value="Animate">
+                    </div>
+                    <br>
+                    <div id="prerenderer">
+                        Generate an animated Image and add it as a layer:<br>
+                        WMS layer name:<input type="text" id="wmsLayerName" value="tasmax">
+                        Map layer name:<input type="text" id="imageLayerName" value="Animate">
+                        <input type="button" id="animateGif" name="animateGif" value="Animate">
+                        <!--Maximum gif frames: <input type="text" id="maxframes" value="40"-->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-<div id="abc"> Some extra text </div>
-
 </body>
 </html>

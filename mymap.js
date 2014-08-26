@@ -423,7 +423,7 @@ MyMap.prototype.showFrame = function(){
  * Note: Does not prevent using invalid time values. 
  */
 MyMap.prototype.showTimeFrame = function(time){
-    $("#abc").html(time);
+    $("#currentDateTime").html(time);
     for (var i=0; i < this.visibleOverlays.length; i++){
         overlay = this.visibleOverlays[i];
         overlay.mergeNewParams({'time':time});
