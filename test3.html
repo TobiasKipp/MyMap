@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="jquery-ui-1.11.1/jquery-ui.js"></script>
+    <link rel="stylesheet" href="jquery-ui-1.11.1/jquery-ui.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript">
+    $(function(){
+        $( "#tabs" ).tabs();
+        //$( "#tabs").draggable();
+    });
+    </script>
+</head>
+<body>
+<div id="tabs">
+    <ul id ="tabsul">
+        <li><a href="#addDiv" class="my.ui-corner-top">First</a></li>
+        <li><a href="#tabs-2" class="my.ui-corner-top">Second</a></li>
+        <li><a href="#tabs-3" class="my.ui-corner-top">Third</a></li>
+    </ul>
+    <div id="addDiv">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</div>
+    <div id="tabs-2">Phasellus mattis tincidunt nibh. Cras orci urna, blandit id, pretium vel, aliquet ornare, felis. Maecenas scelerisque sem non nisl. Fusce sed lorem in enim dictum bibendum.</div>
+    <div id="tabs-3">Nam dui erat, auctor a, dignissim quis, sollicitudin eu, felis. Pellentesque nisi urna, interdum eget, sagittis et, consequat vestibulum, lacus. Mauris porttitor ullamcorper augue.</div>
+</div>
+
+</body>
+</html>

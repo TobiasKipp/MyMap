@@ -35,3 +35,50 @@ input[type=range]{
     display:inline-block;
     white-space:nowrap;
 }
+
+#tabs{
+    padding: 0px;
+    border-radius: 6px;
+    background-color: #00ff00;
+}
+
+/*The content area*/
+#tabs .ui-tabs-panel {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/*tabs bar*/
+#tabs .ui-widget-header{
+    padding-top:8px;
+    background:none;
+    border:none;
+    border-top-left-radius:6px;
+    border-top-right-radius:6px;
+    border-bottom: 1px solid #000000;
+    border-radius: 0px;
+    padding-bottom:2px;
+}
+/*all tab elements*/
+#tabs .ui-tabs-nav a{
+  color: #000000;
+  padding-left:10px;
+  margin-left: -2.9px;
+  margin-right: -2.9px;
+  margin-bottom: -2.9px;
+  margin-top:-10px;
+  border: 1px solid #000000;
+  background-color: #aaaaaa;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+/* fix x position of first tab*/
+#tabs .ui-tabs-nav:first-child{
+  padding-left:2px;
+}
+/* selected tab*/
+#tabs .ui-tabs-active a{
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+}
