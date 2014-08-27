@@ -6,7 +6,8 @@
 /*
  * Get the attribute with the given name from the DOM attributes list.
  */
-function getAttribute(attributes, attributeName){
+function getAttribute(attributesContainingNode, attributeName){
+    var attributes = attributesContainingNode.attributes;
     for (var i = attributes.length-1; i >=0 ; i--){
         if (attributes[i].nodeName === attributeName){
             var statusLocation = attributes[i].nodeValue;
@@ -81,8 +82,7 @@ WpsClient.prototype.addAnimation = function(wmsUrls, startTime, endTime, frameDu
  */
 WpsClient.prototype.getStatusLocation = function(xmlString){
     var xml = $.parseXML(xmlString);
-    var attributes =  $(xml).children()[0].attributes;
-    return getAttribute(attributes, "statusLocation");
+    return getAttribute($(xml).children()[0], "statusLocation");
 }
 
 WpsClient.prototype.isProcessFinished = function(url,finished){
@@ -93,8 +93,18 @@ WpsClient.prototype.isProcessFinished = function(url,finished){
         this.addCounter--;
     }
     finished = (responseText.indexOf("<wps:ProcessSucceeded>") > -1);
+    if(!finished && !hasException){
+        this.showProcessStatus(responseText);
+    }
     return finished
 }
+
+WpsClient.prototype.showProcessStatus = function(responseText){
+    $xml = $($.parseXML(responseText));
+    $progressElement = $xml.find("wps\\:ExecuteResponse wps\\:Status wps\\:ProcessStarted");
+    var percentCompleted = getAttribute($progressElement[0], "percentCompleted");
+    $("#WPSProgress").html("Generating animation. Progress:" + percentCompleted + "%"); 
+};
 
 WpsClient.prototype.getReference = function(processSucceededResponse, outputname){
     var xml = $.parseXML(processSucceededResponse);
@@ -103,8 +113,7 @@ WpsClient.prototype.getReference = function(processSucceededResponse, outputname
     $xml.children("wps\\:ExecuteResponse").children("wps\\:ProcessOutputs").children("wps\\:Output").each(
         function(){
             if ($(this).children("ows\\:Identifier")[0].textContent === outputname){
-                attributes = $(this).children("wps\\:Reference")[0].attributes;
-                reference = getAttribute(attributes, "href");
+                reference = getAttribute($(this).children("wps\\:Reference")[0], "href");
             }
         });
     return reference;
