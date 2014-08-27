@@ -65,3 +65,7 @@ input[type=range]{
 #realtimerender, #prerenderer{
    border: 0px solid black;
 }
+
+#AnimateProgress{
+    display: none;/*hide on start*/
+}

@@ -49,7 +49,6 @@ WpsClient.prototype.addGifAnimation = function(){
 
 WpsClient.prototype.addAnimation = function(wmsUrls, startTime, endTime, frameDuration,
                                             aggregation, layerName, imageLayerName){
-    console.log(this.addCounter);
     var wmsUrlsString = wmsUrls[0];
     for (var i = 1; i < wmsUrls.length; i++){
         wmsUrlsString += ";wms_urls=" + wmsUrls[i];
@@ -67,13 +66,11 @@ WpsClient.prototype.addAnimation = function(wmsUrls, startTime, endTime, frameDu
               );
     url += "&storeExecuteResponse=true&status=true"//ensure it runs async
     //find status location
-    console.log(url)
     var statusLocationContainingXML = getURL(url);
     var statusLocation = this.getStatusLocation(statusLocationContainingXML);
     //CORS workaround on statusLocation
     statusLocation = statusLocation.replace(":"+this.wpsoutputsPort, ":"+this.proxyport)
     var finished = false;
-    console.log(this.addCounter);
     this.HandleProcessFinished(statusLocation, finished, imageLayerName);
 }
 
@@ -96,14 +93,27 @@ WpsClient.prototype.isProcessFinished = function(url,finished){
     if(!finished && !hasException){
         this.showProcessStatus(responseText);
     }
-    return finished
+    //If the process is finished fill the progress bar and let it disappear after a short delay.
+    if (finished){
+        this.setWpsProgressValue("100"); 
+        setTimeout(function(){
+            $("#AnimateProgress").css("display","none");
+            },
+            1000);
+    }
+    return finished;
+}
+
+WpsClient.prototype.setWpsProgressValue = function(percentCompleted){
+    $("#WPSProgress").css("width", percentCompleted+"%").html(percentCompleted+"%");
+    $("#AnimateProgress").css("display","block");
 }
 
 WpsClient.prototype.showProcessStatus = function(responseText){
     $xml = $($.parseXML(responseText));
     $progressElement = $xml.find("wps\\:ExecuteResponse wps\\:Status wps\\:ProcessStarted");
     var percentCompleted = getAttribute($progressElement[0], "percentCompleted");
-    $("#WPSProgress").html("Generating animation. Progress:" + percentCompleted + "%"); 
+    this.setWpsProgressValue(percentCompleted); 
 };
 
 WpsClient.prototype.getReference = function(processSucceededResponse, outputname){
@@ -127,7 +137,6 @@ WpsClient.prototype.getReference = function(processSucceededResponse, outputname
  * uses branches and timeouts to emulate a sleep.
  */
 WpsClient.prototype.HandleProcessFinished = function(url, finished, imageLayerName){
-    console.log("****" + this.addCounter);
     if (this.addCounter >0){
         var _this = this;
         this.timeout = setTimeout(function(){finished = _this.isProcessFinished(url,finished)}, this.delay);
